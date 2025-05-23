@@ -72,7 +72,7 @@ class GameViewModel: ObservableObject {
     // MARK: - Scene Setup
     func setupScene(size: CGSize) -> GameScene {
         let backgroundId = appViewModel?.gameState.currentBackgroundId ?? "medieval_castle"
-        let skinId = appViewModel?.gameState.currentSkinId ?? "knight_default"
+        let skinId = appViewModel?.gameState.currentSkinId ?? "king_default"
         
         let scene = GameScene(
             size: size,

@@ -30,7 +30,7 @@ class ShopViewModel: ObservableObject {
     }
     
     var currentSkinId: String {
-        return appViewModel?.gameState.currentSkinId ?? "knight_default"
+        return appViewModel?.gameState.currentSkinId ?? "king_default"
     }
     
     // MARK: - Initialization
