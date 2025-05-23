@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  PearlRiver
-//
-//  Created by Alex on 22.05.2025.
-//
-
 import SwiftUI
 
 struct ContentView: View {
