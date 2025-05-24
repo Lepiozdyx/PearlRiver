@@ -20,7 +20,7 @@ class AchievementViewModel: ObservableObject {
     }
     
     // MARK: - Initialization
-    init(appViewModel: AppViewModel) {
+    init(appViewModel: AppViewModel? = nil) {
         self.appViewModel = appViewModel
         loadAchievements()
     }
@@ -43,9 +43,12 @@ class AchievementViewModel: ObservableObject {
     }
     
     func claimAchievement(_ achievementId: String) {
-        guard canClaimAchievement(achievementId) else { return }
+        guard canClaimAchievement(achievementId),
+              let appViewModel = appViewModel else { return }
         
-        appViewModel?.claimAchievement(achievementId)
+        // Используем метод GameState для получения награды
+        appViewModel.gameState.claimAchievement(achievementId)
+        appViewModel.saveGameState()
         
         // Показываем анимацию
         claimedAchievementId = achievementId
@@ -82,5 +85,22 @@ class AchievementViewModel: ObservableObject {
         case .completeWithoutHits:
             return nil // Это достижение не имеет прогресса
         }
+    }
+    
+    // Проверить и завершить достижения (вызывается из GameViewModel)
+    func checkAndCompleteAchievements() {
+        guard let appViewModel = appViewModel else { return }
+        let gameState = appViewModel.gameState
+        
+        // Проверяем каждое достижение
+        for achievement in Achievement.allAchievements {
+            if !gameState.completedAchievements.contains(achievement.id) {
+                if achievement.requirement.isSatisfied(by: gameState) {
+                    appViewModel.gameState.completeAchievement(achievement.id)
+                }
+            }
+        }
+        
+        appViewModel.saveGameState()
     }
 }

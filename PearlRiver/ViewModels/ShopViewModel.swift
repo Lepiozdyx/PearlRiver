@@ -2,112 +2,89 @@ import SwiftUI
 import Combine
 
 class ShopViewModel: ObservableObject {
-    // MARK: - Published Properties
-    @Published var currentTab: ShopItemType = .background
-    @Published var backgrounds: [BackgroundItem] = []
-    @Published var skins: [PlayerSkinItem] = []
-    @Published var showPurchaseAlert: Bool = false
-    @Published var purchaseAlertMessage: String = ""
+    enum ShopTab {
+        case skins
+        case backgrounds
+    }
     
-    // MARK: - Properties
+    @Published var currentTab: ShopTab = .skins
+    @Published var availableSkins: [PlayerSkinItem] = []
+    @Published var availableBackgrounds: [BackgroundItem] = []
+    
     weak var appViewModel: AppViewModel?
     
-    // MARK: - Computed Properties
-    var coins: Int {
-        return appViewModel?.gameState.coins ?? 0
-    }
-    
-    var purchasedBackgrounds: [String] {
-        return appViewModel?.gameState.purchasedBackgrounds ?? []
-    }
-    
-    var purchasedSkins: [String] {
-        return appViewModel?.gameState.purchasedSkins ?? []
-    }
-    
-    var currentBackgroundId: String {
-        return appViewModel?.gameState.currentBackgroundId ?? "medieval_castle"
-    }
-    
-    var currentSkinId: String {
-        return appViewModel?.gameState.currentSkinId ?? "king_default"
-    }
-    
-    // MARK: - Initialization
-    init(appViewModel: AppViewModel) {
-        self.appViewModel = appViewModel
+    init() {
         loadItems()
     }
     
-    // MARK: - Methods
-    func loadItems() {
-        backgrounds = BackgroundItem.availableBackgrounds
-        skins = PlayerSkinItem.availableSkins
+    private func loadItems() {
+        availableSkins = PlayerSkinItem.availableSkins
+        availableBackgrounds = BackgroundItem.availableBackgrounds
     }
     
-    func isBackgroundPurchased(_ backgroundId: String) -> Bool {
-        return purchasedBackgrounds.contains(backgroundId)
+    // MARK: - Skins Methods (обновлено с instruments)
+    func isSkinPurchased(_ id: String) -> Bool {
+        guard let gameState = appViewModel?.gameState else { return false }
+        return id == "king_default" || gameState.purchasedSkins.contains(id)
     }
     
-    func isSkinPurchased(_ skinId: String) -> Bool {
-        return purchasedSkins.contains(skinId)
+    func isSkinSelected(_ id: String) -> Bool {
+        guard let gameState = appViewModel?.gameState else { return false }
+        return gameState.currentSkinId == id
     }
     
-    func isBackgroundSelected(_ backgroundId: String) -> Bool {
-        return currentBackgroundId == backgroundId
-    }
-    
-    func isSkinSelected(_ skinId: String) -> Bool {
-        return currentSkinId == skinId
-    }
-    
-    func canPurchaseItem(price: Int) -> Bool {
-        return coins >= price
-    }
-    
-    // MARK: - Actions
-    func purchaseBackground(_ background: BackgroundItem) {
-        guard let appViewModel = appViewModel else { return }
+    func purchaseSkin(_ id: String) {
+        guard let appViewModel = appViewModel,
+              let skin = PlayerSkinItem.availableSkins.first(where: { $0.id == id }),
+              appViewModel.gameState.coins >= skin.price else { return }
         
-        if !canPurchaseItem(price: background.price) {
-            showInsufficientFundsAlert()
-            return
-        }
-        
-        if appViewModel.purchaseBackground(background.id) {
-            showSuccessAlert(itemName: background.name)
+        // Используем метод GameState для покупки
+        if appViewModel.gameState.purchaseSkin(id, price: skin.price) {
+            appViewModel.saveGameState()
+            selectSkin(id)
         }
     }
     
-    func purchaseSkin(_ skin: PlayerSkinItem) {
-        guard let appViewModel = appViewModel else { return }
+    func selectSkin(_ id: String) {
+        guard let appViewModel = appViewModel,
+              isSkinPurchased(id) else { return }
         
-        if !canPurchaseItem(price: skin.price) {
-            showInsufficientFundsAlert()
-            return
-        }
+        appViewModel.gameState.selectSkin(id)
+        appViewModel.saveGameState()
         
-        if appViewModel.purchaseSkin(skin.id) {
-            showSuccessAlert(itemName: skin.name)
+        objectWillChange.send()
+    }
+    
+    // MARK: - Backgrounds Methods
+    func isBackgroundPurchased(_ id: String) -> Bool {
+        guard let gameState = appViewModel?.gameState else { return false }
+        return id == "medieval_castle" || gameState.purchasedBackgrounds.contains(id)
+    }
+    
+    func isBackgroundSelected(_ id: String) -> Bool {
+        guard let gameState = appViewModel?.gameState else { return false }
+        return gameState.currentBackgroundId == id
+    }
+    
+    func purchaseBackground(_ id: String) {
+        guard let appViewModel = appViewModel,
+              let background = BackgroundItem.availableBackgrounds.first(where: { $0.id == id }),
+              appViewModel.gameState.coins >= background.price else { return }
+        
+        // Используем метод GameState для покупки
+        if appViewModel.gameState.purchaseBackground(id, price: background.price) {
+            appViewModel.saveGameState()
+            selectBackground(id)
         }
     }
     
-    func selectBackground(_ backgroundId: String) {
-        appViewModel?.selectBackground(backgroundId)
-    }
-    
-    func selectSkin(_ skinId: String) {
-        appViewModel?.selectSkin(skinId)
-    }
-    
-    // MARK: - Alerts
-    private func showInsufficientFundsAlert() {
-        purchaseAlertMessage = "Not enough coins! You need more coins to purchase this item."
-        showPurchaseAlert = true
-    }
-    
-    private func showSuccessAlert(itemName: String) {
-        purchaseAlertMessage = "Successfully purchased \(itemName)!"
-        showPurchaseAlert = true
+    func selectBackground(_ id: String) {
+        guard let appViewModel = appViewModel,
+              isBackgroundPurchased(id) else { return }
+        
+        appViewModel.gameState.selectBackground(id)
+        appViewModel.saveGameState()
+        
+        objectWillChange.send()
     }
 }

@@ -1,138 +1,71 @@
 import SwiftUI
+import SpriteKit
 import Combine
 
 class GameViewModel: ObservableObject {
     // MARK: - Published Properties
-    @Published var isPaused: Bool = false
-    @Published var showVictoryOverlay: Bool = false
-    @Published var showDefeatOverlay: Bool = false
     @Published var coinsCollected: Int = 0
     @Published var amuletsCollected: Int = 0
-    @Published var obstaclesHit: Int = 0
-    @Published var timeRemaining: TimeInterval = GameConstants.gameDuration
+    @Published var timeRemaining: Double = GameConstants.gameDuration
+    @Published var isPaused: Bool = false
+    @Published var showGameOverOverlay: Bool = false
+    @Published var showPuzzleGame: Bool = false
     
-    // MARK: - Properties
-    let currentLevel: Int
-    weak var appViewModel: AppViewModel?
-    var gameScene: GameScene?
+    // MARK: - Achievement Tracking Properties
+    @Published var obstaclesHit: Int = 0
+    @Published var perfectRun: Bool = true
     
     // MARK: - Private Properties
+    private var gameScene: GameScene?
     private var gameTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    private var isGameOver: Bool = false
     
-    // Свойство для отслеживания идеального прохождения
-    var isPerfectRun: Bool {
-        return obstaclesHit == 0
-    }
+    // MARK: - Public Properties
+    weak var appViewModel: AppViewModel?
+    var currentLevel: Int = 1
     
     // MARK: - Initialization
-    init(level: Int, appViewModel: AppViewModel) {
-        self.currentLevel = level
-        self.appViewModel = appViewModel
-        startGame()
+    init() {
+        setupGameTimer()
     }
     
     deinit {
         cleanup()
     }
     
-    // MARK: - Game Control
-    func startGame() {
-        isPaused = false
-        isGameOver = false
-        showVictoryOverlay = false
-        showDefeatOverlay = false
-        coinsCollected = 0
-        amuletsCollected = 0
-        obstaclesHit = 0
-        timeRemaining = GameConstants.gameDuration
-        
-        startGameTimer()
-    }
+    // MARK: - Public Methods
     
-    func pauseGame() {
-        isPaused = true
-        gameTimer?.invalidate()
-        gameScene?.pauseGame()
-    }
-    
-    func resumeGame() {
-        isPaused = false
-        startGameTimer()
-        gameScene?.resumeGame()
-    }
-    
-    func restartLevel() {
-        cleanup()
-        startGame()
-        gameScene?.resetGame()
-    }
-    
-    // MARK: - Scene Setup
-    func setupScene(size: CGSize) -> GameScene {
+    func setupScene(size: CGSize, level: Int) -> GameScene {
+        currentLevel = level
         let backgroundId = appViewModel?.gameState.currentBackgroundId ?? "medieval_castle"
         let skinId = appViewModel?.gameState.currentSkinId ?? "king_default"
         
-        let scene = GameScene(
-            size: size,
-            level: currentLevel,
-            backgroundId: backgroundId,
-            skinId: skinId
-        )
+        let scene = GameScene(size: size, level: level, backgroundId: backgroundId, skinId: skinId)
         scene.scaleMode = .aspectFill
         scene.gameDelegate = self
         gameScene = scene
         return scene
     }
     
-    // MARK: - Timer
-    private func startGameTimer() {
-        gameTimer?.invalidate()
-        
-        gameTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self, !self.isPaused, !self.isGameOver else { return }
-            
-            self.timeRemaining -= 0.1
-            
-            if self.timeRemaining <= 0 {
-                self.gameOver(victory: true)
-            }
-            
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
+    func startGame() {
+        resetGameState()
+        setupGameTimer()
+        gameScene?.startGame()
     }
     
-    // MARK: - Game Events
-    func collectCoin() {
-        coinsCollected += 1
-        appViewModel?.collectCoin()
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.objectWillChange.send()
+    func togglePause(_ paused: Bool) {
+        if paused && showGameOverOverlay {
+            return
         }
-    }
-    
-    func collectAmulet() {
-        amuletsCollected += 1
-        // Запускаем бонусную игру
-        pauseGame()
-        appViewModel?.startPuzzleBonus()
         
-        DispatchQueue.main.async { [weak self] in
-            self?.objectWillChange.send()
-        }
-    }
-    
-    func hitObstacle() {
-        obstaclesHit += 1
-        appViewModel?.hitObstacle()
+        isPaused = paused
         
-        // Проверяем, есть ли еще монеты
-        if appViewModel?.gameState.coins ?? 0 <= 0 {
-            gameOver(victory: false)
+        if paused {
+            gameTimer?.invalidate()
+            gameScene?.pauseGame()
+        } else {
+            setupGameTimer()
+            gameScene?.resumeGame()
         }
         
         DispatchQueue.main.async { [weak self] in
@@ -140,67 +73,167 @@ class GameViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Game Over
-    private func gameOver(victory: Bool) {
-        isGameOver = true
+    func pauseGame() {
+        togglePause(true)
+    }
+    
+    func resumeGame() {
+        togglePause(false)
+    }
+    
+    func resetGame() {
         cleanup()
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            if victory {
-                self.showVictoryOverlay = true
-                let totalCoins = self.coinsCollected * GameConstants.coinValue
-                let totalAmulets = self.amuletsCollected // Амулеты уже учтены через бонусную игру
-                
-                self.appViewModel?.completeLevel(
-                    self.currentLevel,
-                    coinsEarned: totalCoins,
-                    amuletsEarned: totalAmulets,
-                    perfectRun: self.isPerfectRun
-                )
-            } else {
-                self.showDefeatOverlay = true
-            }
-            
+            self.resetGameState()
+            self.gameScene?.resetGame()
             self.objectWillChange.send()
         }
     }
     
-    // MARK: - Navigation
-    func goToMenu() {
-        cleanup()
-        appViewModel?.goToMenu()
+    // MARK: - Puzzle Game Methods
+    
+    func startPuzzleGame() {
+        pauseGame()
+        showPuzzleGame = true
     }
     
-    func goToNextLevel() {
-        cleanup()
-        if currentLevel < GameConstants.maxLevels {
-            appViewModel?.startGame(level: currentLevel + 1)
-        } else {
-            appViewModel?.goToMenu()
+    func completePuzzleGame(success: Bool) {
+        showPuzzleGame = false
+        
+        if success {
+            amuletsCollected += GameConstants.puzzleReward
+            appViewModel?.gameState.recordPuzzleCompleted()
+        }
+        
+        resumeGame()
+    }
+    
+    // MARK: - Private Methods
+    
+    private func resetGameState() {
+        coinsCollected = 0
+        amuletsCollected = 0
+        timeRemaining = GameConstants.gameDuration
+        obstaclesHit = 0
+        perfectRun = true
+        isPaused = false
+        showGameOverOverlay = false
+        showPuzzleGame = false
+    }
+    
+    private func setupGameTimer() {
+        gameTimer?.invalidate()
+        
+        gameTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self, !self.isPaused else { return }
+            
+            self.timeRemaining -= 0.1
+            
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+            
+            if self.timeRemaining <= 0 {
+                self.gameOver()
+            }
         }
     }
     
-    // MARK: - Cleanup
+    private func gameOver() {
+        cleanup()
+        
+        // Обновляем статистику в AppViewModel
+        if let appViewModel = appViewModel {
+            // Добавляем собранные ресурсы
+            appViewModel.gameState.addCoins(coinsCollected * GameConstants.coinValue)
+            appViewModel.gameState.addAmulets(amuletsCollected)
+            
+            // Записываем завершение уровня
+            appViewModel.gameState.completeLevel(currentLevel)
+            
+            // Записываем достижения
+            if perfectRun {
+                appViewModel.gameState.recordPerfectRun()
+            }
+            
+            // Сохраняем состояние
+            appViewModel.saveGameState()
+            
+            // Проверяем достижения
+            checkAchievements()
+        }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.showGameOverOverlay = true
+            self.objectWillChange.send()
+        }
+    }
+    
+    private func checkAchievements() {
+        guard let appViewModel = appViewModel else { return }
+        let gameState = appViewModel.gameState
+        
+        // Проверяем каждое достижение
+        for achievement in Achievement.allAchievements {
+            if !gameState.completedAchievements.contains(achievement.id) {
+                if achievement.requirement.isSatisfied(by: gameState) {
+                    var updatedGameState = gameState
+                    updatedGameState.completeAchievement(achievement.id)
+                    appViewModel.gameState = updatedGameState
+                }
+            }
+        }
+    }
+    
     private func cleanup() {
         gameTimer?.invalidate()
-        gameTimer = nil
         gameScene?.pauseGame()
+        isPaused = true
     }
 }
 
 // MARK: - GameSceneDelegate
 extension GameViewModel: GameSceneDelegate {
     func didCollectCoin() {
-        collectCoin()
+        coinsCollected += 1
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.objectWillChange.send()
+        }
     }
     
     func didCollectAmulet() {
-        collectAmulet()
+        // Запускаем бонусную игру-пазл
+        startPuzzleGame()
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.objectWillChange.send()
+        }
     }
     
     func didHitObstacle() {
-        hitObstacle()
+        obstaclesHit += 1
+        perfectRun = false
+        
+        // Вычитаем 1 монету из общей казны (не из собранных в этом раунде)
+        if let appViewModel = appViewModel {
+            if appViewModel.gameState.coins > 0 {
+                var gameState = appViewModel.gameState
+                gameState.addCoins(-1)
+                appViewModel.gameState = gameState
+                appViewModel.saveGameState()
+            }
+        }
+        
+        // Записываем статистику
+        appViewModel?.gameState.recordObstacleHit()
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.objectWillChange.send()
+        }
     }
 }

@@ -1,264 +1,261 @@
+//
+//  AppViewModel.swift
+//  PearlRiver
+//
+//  Created by Alex on 24.05.2025.
+//
+
+
 import SwiftUI
 import Combine
 
-// Экраны приложения
-enum AppScreen: Equatable {
-    case menu
-    case levelSelect
-    case game(level: Int)
-    case palace
-    case shop
-    case achievements
-    case settings
-    case dailyReward
-    case puzzleBonus
-}
-
 class AppViewModel: ObservableObject {
-    // MARK: - Published Properties
     @Published var currentScreen: AppScreen = .menu
+    @Published var gameLevel: Int = 1
+    @Published var coins: Int = 0
+    @Published var amulets: Int = 0
     @Published var gameState: GameState
-    @Published var isLoading: Bool = false
-    @Published var showDailyReward: Bool = false
     
-    // MARK: - Child ViewModels
     @Published var gameViewModel: GameViewModel?
-    @Published var palaceViewModel: PalaceViewModel?
-    @Published var shopViewModel: ShopViewModel?
     @Published var achievementViewModel: AchievementViewModel?
-    @Published var puzzleViewModel: PuzzleViewModel?
     
-    // MARK: - Private Properties
-    private var cancellables = Set<AnyCancellable>()
-    private var palaceUpdateTimer: Timer?
-    
-    // MARK: - Initialization
     init() {
         self.gameState = GameState.load()
-        setupDailyRewardCheck()
-        setupPalaceIncomeTimer()
+        self.coins = gameState.coins
+        self.amulets = gameState.amulets
+        self.gameLevel = gameState.currentLevel
+        self.achievementViewModel = AchievementViewModel(appViewModel: self)
     }
     
-    // MARK: - Navigation
+    var currentBackground: String {
+        return gameState.currentBackgroundId
+    }
+    
+    var currentSkin: String {
+        return gameState.currentSkinId
+    }
+    
+    // MARK: - Navigation Methods
     func navigateTo(_ screen: AppScreen) {
         currentScreen = screen
-        
-        // Инициализация соответствующих ViewModel'ов при переходе
-        switch screen {
-        case .game(let level):
-            gameViewModel = GameViewModel(level: level, appViewModel: self)
-            
-        case .palace:
-            if palaceViewModel == nil {
-                palaceViewModel = PalaceViewModel(appViewModel: self)
-            }
-            
-        case .shop:
-            if shopViewModel == nil {
-                shopViewModel = ShopViewModel(appViewModel: self)
-            }
-            
-        case .achievements:
-            if achievementViewModel == nil {
-                achievementViewModel = AchievementViewModel(appViewModel: self)
-            }
-            
-        case .puzzleBonus:
-            if puzzleViewModel == nil {
-                puzzleViewModel = PuzzleViewModel(appViewModel: self)
-            }
-            
-        default:
-            break
-        }
     }
     
     func goToMenu() {
-        currentScreen = .menu
         gameViewModel = nil
+        navigateTo(.menu)
     }
     
-    // MARK: - Game Actions
-    func startGame(level: Int) {
-        navigateTo(.game(level: level))
+    func goToPalace() {
+        navigateTo(.myPalace)
     }
     
-    func completeLevel(_ level: Int, coinsEarned: Int, amuletsEarned: Int, perfectRun: Bool = false) {
-        gameState.completeLevel(level)
-        gameState.addCoins(coinsEarned)
-        gameState.addAmulets(amuletsEarned)
+    func goToLevelSelect() {
+        navigateTo(.levelSelect)
+    }
+    
+    func goToShop() {
+        navigateTo(.shop)
+    }
+    
+    func goToAchievements() {
+        navigateTo(.achievements)
+    }
+    
+    func goToSettings() {
+        navigateTo(.settings)
+    }
+    
+    // MARK: - Game Methods
+    func startGame(level: Int? = nil) {
+        let levelToStart = level ?? gameState.currentLevel
+        gameLevel = levelToStart
+        gameState.currentLevel = levelToStart
         
-        // Проверка достижений
-        checkAchievements()
-        
-        // Проверка достижения "Perfect Run"
-        if perfectRun {
-            unlockAchievement("perfect_run")
-        }
-        
+        gameViewModel = GameViewModel()
+        gameViewModel?.appViewModel = self
+        navigateTo(.game)
         saveGameState()
     }
     
-    func hitObstacle() {
-        // Вычитаем монету при столкновении
-        if gameState.coins > 0 {
-            gameState.addCoins(-1)
+    func pauseGame() {
+        gameViewModel?.pauseGame()
+    }
+    
+    func resumeGame() {
+        gameViewModel?.resumeGame()
+    }
+    
+    func restartLevel() {
+        gameViewModel?.resetGame()
+    }
+    
+    func goToNextLevel() {
+        if gameLevel < GameConstants.maxLevels {
+            gameLevel += 1
+            gameState.currentLevel = gameLevel
+            startGame(level: gameLevel)
+        } else {
+            goToMenu()
         }
-        gameState.totalObstaclesHit += 1
+    }
+    
+    // MARK: - Currency Methods (обновлено под амулеты)
+    func addCoins(_ amount: Int) {
+        gameState.addCoins(amount)
+        coins = gameState.coins
         saveGameState()
     }
     
-    func collectCoin() {
-        gameState.addCoins(GameConstants.coinValue)
+    func addAmulets(_ amount: Int) {
+        gameState.addAmulets(amount)
+        amulets = gameState.amulets
         saveGameState()
     }
     
-    func startPuzzleBonus() {
-        navigateTo(.puzzleBonus)
+    func spendCoins(_ amount: Int) -> Bool {
+        if gameState.spendCoins(amount) {
+            coins = gameState.coins
+            saveGameState()
+            return true
+        }
+        return false
     }
     
-    func completePuzzle(success: Bool) {
-        if success {
-            gameState.addAmulets(GameConstants.puzzleReward)
-            gameState.puzzlesCompleted += 1
-            checkAchievements()
+    func spendAmulets(_ amount: Int) -> Bool {
+        if gameState.spendAmulets(amount) {
+            amulets = gameState.amulets
+            saveGameState()
+            return true
         }
-        
-        // Возвращаемся к игре
-        if let gameVM = gameViewModel {
-            navigateTo(.game(level: gameVM.currentLevel))
-        }
-        
-        saveGameState()
+        return false
     }
     
-    // MARK: - Palace Actions
+    // MARK: - Palace Methods
     func upgradePalaceBuilding(_ buildingId: String) -> Bool {
-        guard let index = gameState.palaceBuildings.firstIndex(where: { $0.id == buildingId }),
-              let goldCost = gameState.palaceBuildings[index].upgradeCostGold,
-              let amuletCost = gameState.palaceBuildings[index].upgradeCostAmulets,
-              gameState.coins >= goldCost,
-              gameState.amulets >= amuletCost else {
-            return false
+        if gameState.upgradePalaceBuilding(buildingId: buildingId) {
+            // Обновляем локальные значения валют
+            coins = gameState.coins
+            amulets = gameState.amulets
+            saveGameState()
+            
+            // Проверяем достижения после улучшения
+            checkAchievements()
+            return true
         }
-        
-        gameState.addCoins(-goldCost)
-        gameState.addAmulets(-amuletCost)
-        gameState.palaceBuildings[index].level += 1
-        
-        checkAchievements()
-        saveGameState()
-        return true
-    }
-    
-    // MARK: - Shop Actions
-    func purchaseBackground(_ backgroundId: String) -> Bool {
-        guard let background = BackgroundItem.availableBackgrounds.first(where: { $0.id == backgroundId }),
-              gameState.coins >= background.price,
-              !gameState.purchasedBackgrounds.contains(backgroundId) else {
-            return false
-        }
-        
-        gameState.addCoins(-background.price)
-        gameState.purchasedBackgrounds.append(backgroundId)
-        gameState.currentBackgroundId = backgroundId
-        saveGameState()
-        return true
-    }
-    
-    func purchaseSkin(_ skinId: String) -> Bool {
-        guard let skin = PlayerSkinItem.availableSkins.first(where: { $0.id == skinId }),
-              gameState.coins >= skin.price,
-              !gameState.purchasedSkins.contains(skinId) else {
-            return false
-        }
-        
-        gameState.addCoins(-skin.price)
-        gameState.purchasedSkins.append(skinId)
-        gameState.currentSkinId = skinId
-        saveGameState()
-        return true
-    }
-    
-    func selectBackground(_ backgroundId: String) {
-        guard gameState.purchasedBackgrounds.contains(backgroundId) else { return }
-        gameState.currentBackgroundId = backgroundId
-        saveGameState()
-    }
-    
-    func selectSkin(_ skinId: String) {
-        guard gameState.purchasedSkins.contains(skinId) else { return }
-        gameState.currentSkinId = skinId
-        saveGameState()
-    }
-    
-    // MARK: - Achievement Actions
-    func claimAchievement(_ achievementId: String) {
-        // Immutable value 'achievement' was never used; consider replacing with '_' or removing it !
-        guard let achievement = Achievement.byId(achievementId),
-              gameState.completedAchievements.contains(achievementId),
-              !gameState.claimedAchievements.contains(achievementId) else {
-            return
-        }
-        
-        gameState.claimedAchievements.append(achievementId)
-        gameState.addCoins(GameConstants.achievementReward)
-        saveGameState()
-    }
-    
-    private func unlockAchievement(_ achievementId: String) {
-        guard !gameState.completedAchievements.contains(achievementId) else { return }
-        gameState.completedAchievements.append(achievementId)
-        saveGameState()
+        return false
     }
     
     // MARK: - Daily Reward
     func claimDailyReward() {
         gameState.claimDailyReward()
-        showDailyReward = false
+        coins = gameState.coins
         saveGameState()
     }
     
-    // MARK: - Private Methods
-    private func setupDailyRewardCheck() {
-        // Проверяем при запуске
-        if gameState.canClaimDailyReward {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.showDailyReward = true
-            }
-        }
+    var canClaimDailyReward: Bool {
+        return gameState.canClaimDailyReward
     }
     
-    private func setupPalaceIncomeTimer() {
-        // Обновляем доход дворца каждые 5 минут
-        palaceUpdateTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
-            self?.gameState.updatePalaceIncome()
-            self?.saveGameState()
-        }
+    // MARK: - Achievements Methods
+    func checkAchievements() {
+        achievementViewModel?.checkAndCompleteAchievements()
+        // Обновляем локальные значения после возможного получения наград
+        coins = gameState.coins
+        amulets = gameState.amulets
     }
     
-    private func checkAchievements() {
-        for achievement in Achievement.allAchievements {
-            if !gameState.completedAchievements.contains(achievement.id) &&
-               achievement.requirement.isSatisfied(by: gameState) {
-                unlockAchievement(achievement.id)
-            }
-        }
+    func claimAchievement(_ achievementId: String) {
+        achievementViewModel?.claimAchievement(achievementId)
+        coins = gameState.coins // Обновляем после получения награды
     }
     
-    private func saveGameState() {
+    // MARK: - Level Completion
+    func completeLevel(coinsCollected: Int, amuletsCollected: Int, perfectRun: Bool) {
+        // Добавляем собранные ресурсы
+        gameState.addCoins(coinsCollected * GameConstants.coinValue)
+        gameState.addAmulets(amuletsCollected)
+        
+        // Записываем завершение уровня
+        gameState.completeLevel(gameLevel)
+        
+        // Записываем статистику
+        if perfectRun {
+            gameState.recordPerfectRun()
+        }
+        
+        // Обновляем локальные значения
+        coins = gameState.coins
+        amulets = gameState.amulets
+        
+        saveGameState()
+        checkAchievements()
+    }
+    
+    // MARK: - Shop Integration
+    func purchaseItem(type: String, id: String, price: Int) -> Bool {
+        guard gameState.coins >= price else { return false }
+        
+        var success = false
+        
+        switch type {
+        case "background":
+            success = gameState.purchaseBackground(id, price: price)
+        case "skin":
+            success = gameState.purchaseSkin(id, price: price)
+        default:
+            return false
+        }
+        
+        if success {
+            coins = gameState.coins
+            saveGameState()
+        }
+        
+        return success
+    }
+    
+    func selectItem(type: String, id: String) {
+        switch type {
+        case "background":
+            gameState.selectBackground(id)
+        case "skin":
+            gameState.selectSkin(id)
+        default:
+            return
+        }
+        
+        saveGameState()
+    }
+    
+    // MARK: - Game State Management
+    func saveGameState() {
         gameState.save()
-        objectWillChange.send()
+        
+        // Обновляем опубликованные свойства
+        DispatchQueue.main.async { [weak self] in
+            self?.objectWillChange.send()
+        }
     }
     
-    // MARK: - Reset
-    func resetProgress() {
+    func resetGameState() {
         GameState.reset()
         gameState = GameState()
+        coins = 0
+        amulets = 0
+        gameLevel = 1
+        
+        // Пересоздаем AchievementViewModel
+        achievementViewModel = AchievementViewModel(appViewModel: self)
+        
         saveGameState()
     }
     
-    deinit {
-        palaceUpdateTimer?.invalidate()
+    // MARK: - Level Management
+    func isLevelUnlocked(_ level: Int) -> Bool {
+        return level <= gameState.maxUnlockedLevel
+    }
+    
+    func isLevelCompleted(_ level: Int) -> Bool {
+        return gameState.levelsCompleted.contains(level)
     }
 }

@@ -42,7 +42,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // Game state
     private var isGamePaused: Bool = false
-    private var playerFlashAction: SKAction?
     
     // Speed calculations
     private var objectFallSpeed: CGFloat
@@ -233,9 +232,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Update rotation for coins and amulets
             if let userData = object.userData,
-               let type = userData["type"] as? String,
-               (type == "coin" || type == "amulet") {
-                object.zRotation += CGFloat(deltaTime) * 2 * .pi
+               let typeRawValue = userData["type"] as? Int,
+               let type = FallingObjectType(rawValue: typeRawValue) {
+                if type == .coin || type == .amulet {
+                    object.zRotation += CGFloat(deltaTime) * 2 * .pi
+                }
             }
         }
     }
@@ -286,25 +287,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func addCoinAnimation(to node: SKSpriteNode) {
         // Add glow effect
-        let glow = SKSpriteNode(texture: SKTexture(imageNamed: "glow_yellow"))
-        glow.size = CGSize(width: node.size.width * 1.5, height: node.size.height * 1.5)
-        glow.alpha = 0.5
+        let glow = SKSpriteNode(color: .yellow, size: CGSize(width: node.size.width * 1.5, height: node.size.height * 1.5))
+        glow.alpha = 0.3
         glow.zPosition = -1
         glow.blendMode = .add
         node.addChild(glow)
         
         // Pulse animation
-        let fadeIn = SKAction.fadeAlpha(to: 0.8, duration: 0.5)
-        let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: 0.5)
+        let fadeIn = SKAction.fadeAlpha(to: 0.6, duration: 0.5)
+        let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 0.5)
         let pulse = SKAction.sequence([fadeIn, fadeOut])
         glow.run(SKAction.repeatForever(pulse))
     }
     
     private func addAmuletAnimation(to node: SKSpriteNode) {
         // Add purple glow
-        let glow = SKSpriteNode(texture: SKTexture(imageNamed: "glow_purple"))
-        glow.size = CGSize(width: node.size.width * 2, height: node.size.height * 2)
-        glow.alpha = 0.6
+        let glow = SKSpriteNode(color: .purple, size: CGSize(width: node.size.width * 2, height: node.size.height * 2))
+        glow.alpha = 0.4
         glow.zPosition = -1
         glow.blendMode = .add
         node.addChild(glow)
@@ -383,14 +382,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Notify delegate
         gameDelegate?.didCollectCoin()
-        
-        // Play sound
-        run(SKAction.playSoundFileNamed("coin_collect.wav", waitForCompletion: false))
     }
     
     private func handleAmuletCollection(_ amulet: SKSpriteNode) {
         // Create special effect
-        createCollectionEffect(at: amulet.position, color: .yellow)
+        createCollectionEffect(at: amulet.position, color: .purple)
         
         // Remove amulet
         amulet.removeFromParent()
@@ -400,9 +396,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Notify delegate
         gameDelegate?.didCollectAmulet()
-        
-        // Play sound
-        run(SKAction.playSoundFileNamed("amulet_collect.wav", waitForCompletion: false))
     }
     
     private func handleObstacleHit(_ obstacle: SKSpriteNode) {
@@ -420,16 +413,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Notify delegate
         gameDelegate?.didHitObstacle()
-        
-        // Play sound
-        run(SKAction.playSoundFileNamed("hit.wav", waitForCompletion: false))
     }
     
     // MARK: - Effects
     private func createCollectionEffect(at position: CGPoint, color: UIColor) {
         let emitter = SKEmitterNode()
         emitter.position = position
-        emitter.particleTexture = SKTexture(imageNamed: "particle_star")
         emitter.particleBirthRate = 100
         emitter.numParticlesToEmit = 20
         emitter.particleLifetime = 0.5
@@ -456,7 +445,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func createHitEffect(at position: CGPoint) {
         let emitter = SKEmitterNode()
         emitter.position = position
-        emitter.particleTexture = SKTexture(imageNamed: "particle_hit")
         emitter.particleBirthRate = 50
         emitter.numParticlesToEmit = 10
         emitter.particleLifetime = 0.3

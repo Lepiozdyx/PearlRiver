@@ -1,14 +1,7 @@
 import SwiftUI
 
-struct Extension_Text: View {
-    var body: some View {
-        Text("Font")
-            .myFont(32)
-    }
-}
-
 extension Text {
-    func myFont(_ size: CGFloat) -> some View {
+    func fontPRG(_ size: CGFloat) -> some View {
         self
             .font(.system(size: size, weight: .regular, design: .serif))
             .foregroundStyle(.white)
@@ -16,8 +9,4 @@ extension Text {
             .multilineTextAlignment(.center)
             .textCase(.uppercase)
     }
-}
-
-#Preview {
-    Extension_Text()
 }

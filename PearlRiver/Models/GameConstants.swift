@@ -1,7 +1,5 @@
-import Foundation
 import SwiftUI
 
-// Константы игры
 struct GameConstants {
     // MARK: - Общие константы
     static let defaultAnimationDuration: Double = 0.3

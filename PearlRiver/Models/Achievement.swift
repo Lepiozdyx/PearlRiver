@@ -1,6 +1,5 @@
 import Foundation
 
-// Структура достижения
 struct Achievement: Identifiable, Codable, Equatable {
     let id: String
     let title: String
@@ -84,8 +83,8 @@ enum AchievementRequirement: Codable, Equatable {
             return gameState.palaceBuildings.contains { $0.level >= level }
             
         case .completeWithoutHits:
-            // Это требование проверяется во время игры
-            return false
+            // Проверяется через perfectRuns
+            return gameState.perfectRuns > 0
         }
     }
     
