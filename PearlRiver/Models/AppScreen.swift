@@ -4,7 +4,6 @@ enum AppScreen: CaseIterable {
     case menu
     case levelSelect
     case game
-    case puzzle
     case myPalace
     case settings
     case shop

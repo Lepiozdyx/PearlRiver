@@ -1,15 +1,8 @@
-//
-//  AppViewModel.swift
-//  PearlRiver
-//
-//  Created by Alex on 24.05.2025.
-//
-
-
 import SwiftUI
 import Combine
 
 class AppViewModel: ObservableObject {
+    // MARK: - Published Properties
     @Published var currentScreen: AppScreen = .menu
     @Published var gameLevel: Int = 1
     @Published var coins: Int = 0
@@ -19,6 +12,11 @@ class AppViewModel: ObservableObject {
     @Published var gameViewModel: GameViewModel?
     @Published var achievementViewModel: AchievementViewModel?
     
+    // MARK: - Properties for Puzzle Game
+    @Published var showPuzzleGame: Bool = false
+    private var puzzleCompletionHandler: ((Bool) -> Void)?
+    
+    // MARK: - Initialization
     init() {
         self.gameState = GameState.load()
         self.coins = gameState.coins
@@ -27,6 +25,7 @@ class AppViewModel: ObservableObject {
         self.achievementViewModel = AchievementViewModel(appViewModel: self)
     }
     
+    // MARK: - Computed Properties
     var currentBackground: String {
         return gameState.currentBackgroundId
     }
@@ -37,44 +36,41 @@ class AppViewModel: ObservableObject {
     
     // MARK: - Navigation Methods
     func navigateTo(_ screen: AppScreen) {
+        // Cleanup game view model if leaving game screen
+        if currentScreen == .game && screen != .game {
+            gameViewModel?.cleanup()
+        }
+        
         currentScreen = screen
     }
     
-//    func goToMenu() {
-//        gameViewModel = nil
-//        navigateTo(.menu)
-//    }
-//    
-//    func goToPalace() {
-//        navigateTo(.myPalace)
-//    }
-//    
-//    func goToLevelSelect() {
-//        navigateTo(.levelSelect)
-//    }
-//    
-//    func goToShop() {
-//        navigateTo(.shop)
-//    }
-//    
-//    func goToAchievements() {
-//        navigateTo(.achievements)
-//    }
-//    
-//    func goToSettings() {
-//        navigateTo(.settings)
-//    }
+    func goToMenu() {
+        gameViewModel = nil
+        navigateTo(.menu)
+    }
     
     // MARK: - Game Methods
     func startGame(level: Int? = nil) {
         let levelToStart = level ?? gameState.currentLevel
+        
+        // Validate level is unlocked
+        guard isLevelUnlocked(levelToStart) else { return }
+        
         gameLevel = levelToStart
         gameState.currentLevel = levelToStart
         
+        // Create new game view model
         gameViewModel = GameViewModel()
         gameViewModel?.appViewModel = self
+        gameViewModel?.currentLevel = levelToStart
+        
         navigateTo(.game)
         saveGameState()
+        
+        // Start the game after navigation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.gameViewModel?.startGame()
+        }
     }
     
     func pauseGame() {
@@ -87,19 +83,76 @@ class AppViewModel: ObservableObject {
     
     func restartLevel() {
         gameViewModel?.resetGame()
+        
+        // Restart the game after reset
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.gameViewModel?.startGame()
+        }
     }
     
     func goToNextLevel() {
         if gameLevel < GameConstants.maxLevels {
             gameLevel += 1
             gameState.currentLevel = gameLevel
-            startGame(level: gameLevel)
+            saveGameState()
+            
+            // Reset game view model and start new level
+            gameViewModel?.resetGame()
+            gameViewModel?.currentLevel = gameLevel
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.gameViewModel?.startGame()
+            }
         } else {
-            navigateTo(.menu)
+            // All levels completed, return to menu
+            goToMenu()
         }
     }
     
-    // MARK: - Currency Methods (обновлено под амулеты)
+    // MARK: - Puzzle Game Methods
+    func showPuzzleGameOverlay(completion: @escaping (Bool) -> Void) {
+        puzzleCompletionHandler = completion
+        showPuzzleGame = true
+    }
+    
+    func completePuzzleGame(success: Bool) {
+        showPuzzleGame = false
+        
+        if success {
+            // Add amulets reward
+            addAmulets(GameConstants.puzzleReward)
+            gameState.recordPuzzleCompleted()
+            saveGameState()
+        }
+        
+        // Call completion handler
+        puzzleCompletionHandler?(success)
+        puzzleCompletionHandler = nil
+    }
+    
+    // MARK: - Level Completion
+    func completeLevel(coinsCollected: Int, amuletsCollected: Int, perfectRun: Bool) {
+        // Add collected resources (coins already multiplied by 5 in GameViewModel)
+        gameState.addCoins(coinsCollected)
+        gameState.addAmulets(amuletsCollected)
+        
+        // Record level completion
+        gameState.completeLevel(gameLevel)
+        
+        // Record statistics
+        if perfectRun {
+            gameState.recordPerfectRun()
+        }
+        
+        // Update local values
+        coins = gameState.coins
+        amulets = gameState.amulets
+        
+        saveGameState()
+        checkAchievements()
+    }
+    
+    // MARK: - Currency Methods
     func addCoins(_ amount: Int) {
         gameState.addCoins(amount)
         coins = gameState.coins
@@ -133,12 +186,9 @@ class AppViewModel: ObservableObject {
     // MARK: - Palace Methods
     func upgradePalaceBuilding(_ buildingId: String) -> Bool {
         if gameState.upgradePalaceBuilding(buildingId: buildingId) {
-            // Обновляем локальные значения валют
             coins = gameState.coins
             amulets = gameState.amulets
             saveGameState()
-            
-            // Проверяем достижения после улучшения
             checkAchievements()
             return true
         }
@@ -159,36 +209,13 @@ class AppViewModel: ObservableObject {
     // MARK: - Achievements Methods
     func checkAchievements() {
         achievementViewModel?.checkAndCompleteAchievements()
-        // Обновляем локальные значения после возможного получения наград
         coins = gameState.coins
         amulets = gameState.amulets
     }
     
     func claimAchievement(_ achievementId: String) {
         achievementViewModel?.claimAchievement(achievementId)
-        coins = gameState.coins // Обновляем после получения награды
-    }
-    
-    // MARK: - Level Completion
-    func completeLevel(coinsCollected: Int, amuletsCollected: Int, perfectRun: Bool) {
-        // Добавляем собранные ресурсы
-        gameState.addCoins(coinsCollected * GameConstants.coinValue)
-        gameState.addAmulets(amuletsCollected)
-        
-        // Записываем завершение уровня
-        gameState.completeLevel(gameLevel)
-        
-        // Записываем статистику
-        if perfectRun {
-            gameState.recordPerfectRun()
-        }
-        
-        // Обновляем локальные значения
         coins = gameState.coins
-        amulets = gameState.amulets
-        
-        saveGameState()
-        checkAchievements()
     }
     
     // MARK: - Shop Integration
@@ -231,7 +258,6 @@ class AppViewModel: ObservableObject {
     func saveGameState() {
         gameState.save()
         
-        // Обновляем опубликованные свойства
         DispatchQueue.main.async { [weak self] in
             self?.objectWillChange.send()
         }
@@ -244,7 +270,6 @@ class AppViewModel: ObservableObject {
         amulets = 0
         gameLevel = 1
         
-        // Пересоздаем AchievementViewModel
         achievementViewModel = AchievementViewModel(appViewModel: self)
         
         saveGameState()
@@ -257,5 +282,13 @@ class AppViewModel: ObservableObject {
     
     func isLevelCompleted(_ level: Int) -> Bool {
         return gameState.levelsCompleted.contains(level)
+    }
+    
+    // MARK: - Passive Income Update
+    func updatePalaceIncome() {
+        gameState.updatePalaceIncome()
+        coins = gameState.coins
+        amulets = gameState.amulets
+        saveGameState()
     }
 }

@@ -192,7 +192,7 @@ class GameViewModel: ObservableObject {
         }
     }
     
-    private func cleanup() {
+    func cleanup() {
         gameTimer?.invalidate()
         gameScene?.pauseGame()
         isPaused = true

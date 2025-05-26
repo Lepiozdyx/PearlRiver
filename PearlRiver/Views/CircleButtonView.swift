@@ -19,6 +19,7 @@ struct CircleButtonView: View {
                         .scaledToFit()
                         .frame(width: 35)
                         .foregroundStyle(.white)
+                        .padding()
                 }
         }
 //        .withSound()
