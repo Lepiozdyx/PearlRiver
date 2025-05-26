@@ -8,11 +8,11 @@ struct GameConstants {
     // MARK: - Игровой процесс
     static let gameDuration: TimeInterval = 60.0 // 60 секунд на уровень
     static let playerInitialX: CGFloat = 0.5 // Начальная позиция игрока (в процентах от ширины экрана)
-    static let playerVerticalPosition: CGFloat = 0.9 // Позиция игрока по вертикали (90% от низа)
-    static let playerSize = CGSize(width: 70, height: 100) // Размер персонажа
+    static let playerVerticalPosition: CGFloat = 0.75 // Позиция игрока по вертикали (90% от низа)
+    static let playerSize = CGSize(width: 75, height: 150) // Размер персонажа
     
     // MARK: - Падающие объекты
-    static let objectFallBaseSpeed: CGFloat = 200.0 // Базовая скорость падения объектов
+    static let objectFallBaseSpeed: CGFloat = 100.0 // Базовая скорость падения объектов
     static let objectSpawnInterval: TimeInterval = 1.5 // Интервал появления объектов
     static let objectSpawnMinX: CGFloat = 40 // Минимальный отступ от края экрана
     static let objectSpawnMaxX: CGFloat = 40 // Максимальный отступ от края экрана

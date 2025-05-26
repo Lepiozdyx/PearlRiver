@@ -40,30 +40,30 @@ class AppViewModel: ObservableObject {
         currentScreen = screen
     }
     
-    func goToMenu() {
-        gameViewModel = nil
-        navigateTo(.menu)
-    }
-    
-    func goToPalace() {
-        navigateTo(.myPalace)
-    }
-    
-    func goToLevelSelect() {
-        navigateTo(.levelSelect)
-    }
-    
-    func goToShop() {
-        navigateTo(.shop)
-    }
-    
-    func goToAchievements() {
-        navigateTo(.achievements)
-    }
-    
-    func goToSettings() {
-        navigateTo(.settings)
-    }
+//    func goToMenu() {
+//        gameViewModel = nil
+//        navigateTo(.menu)
+//    }
+//    
+//    func goToPalace() {
+//        navigateTo(.myPalace)
+//    }
+//    
+//    func goToLevelSelect() {
+//        navigateTo(.levelSelect)
+//    }
+//    
+//    func goToShop() {
+//        navigateTo(.shop)
+//    }
+//    
+//    func goToAchievements() {
+//        navigateTo(.achievements)
+//    }
+//    
+//    func goToSettings() {
+//        navigateTo(.settings)
+//    }
     
     // MARK: - Game Methods
     func startGame(level: Int? = nil) {
@@ -95,7 +95,7 @@ class AppViewModel: ObservableObject {
             gameState.currentLevel = gameLevel
             startGame(level: gameLevel)
         } else {
-            goToMenu()
+            navigateTo(.menu)
         }
     }
     

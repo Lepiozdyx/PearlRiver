@@ -35,12 +35,15 @@ class GameViewModel: ObservableObject {
     
     // MARK: - Public Methods
     
-    func setupScene(size: CGSize, level: Int) -> GameScene {
-        currentLevel = level
+    func setupScene(size: CGSize) -> GameScene {
+        if let appVM = appViewModel {
+            currentLevel = appVM.gameLevel
+        }
+        
         let backgroundId = appViewModel?.gameState.currentBackgroundId ?? "medieval_castle"
         let skinId = appViewModel?.gameState.currentSkinId ?? "king_default"
         
-        let scene = GameScene(size: size, level: level, backgroundId: backgroundId, skinId: skinId)
+        let scene = GameScene(size: size, level: currentLevel, backgroundId: backgroundId, skinId: skinId)
         scene.scaleMode = .aspectFill
         scene.gameDelegate = self
         gameScene = scene

@@ -9,6 +9,7 @@ enum AppScreen: CaseIterable {
     case settings
     case shop
     case achievements
+    case daily
     // мини-игры добавим позднее
 //    case miniGames
 //    case memoryCards
