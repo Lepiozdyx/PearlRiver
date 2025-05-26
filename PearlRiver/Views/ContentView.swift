@@ -31,23 +31,22 @@ struct ContentView: View {
                     .transition(.move(edge: .trailing))
                 
             case .settings:
-                Text("Settings View - Coming Soon")
-                    .fontPRG(24)
+                SettingsView()
+                    .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
                 
             case .shop:
-                Text("Shop View - Coming Soon")
-                    .fontPRG(24)
+                ShopView()
+                    .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
                 
             case .achievements:
-                Text("Achievements View - Coming Soon")
-                    .fontPRG(24)
+                AchievementView()
+                    .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
                 
             case .daily:
                 Text("Daily Reward View - Coming Soon")
-                    .fontPRG(24)
                     .transition(.move(edge: .trailing))
             }
             

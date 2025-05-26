@@ -1,0 +1,184 @@
+import SwiftUI
+
+struct AchievementView: View {
+    @EnvironmentObject private var appViewModel: AppViewModel
+    @StateObject private var viewModel = AchievementViewModel()
+    @StateObject private var svm = SettingsViewModel.shared
+    
+    @State private var contentOpacity: Double = 0
+    @State private var contentOffset: CGFloat = 20
+    
+    var body: some View {
+        ZStack {
+            AppBGView()
+            
+            VStack {
+                // Header with back button and currency
+                HStack(alignment: .top) {
+                    CircleButtonView(icon: "arrowshape.backward.fill", height: 65) {
+                        svm.play()
+                        appViewModel.navigateTo(.menu)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 8) {
+                        ScoreboardView(
+                            amount: appViewModel.amulets,
+                            width: 145,
+                            height: 45,
+                            isCoins: false
+                        )
+                        
+                        ScoreboardView(
+                            amount: appViewModel.coins,
+                            width: 145,
+                            height: 45
+                        )
+                    }
+                }
+                Spacer()
+            }
+            .padding()
+            
+            VStack(spacing: 0) {
+                Image(.buttonRect)
+                    .resizable()
+                    .frame(width: 250, height: 80)
+                    .overlay {
+                        Text("Achievements")
+                            .fontPRG(24)
+                            .offset(y: 2)
+                    }
+                
+                Spacer()
+                
+                // Main content
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 10) {
+                        ForEach(viewModel.achievements) { achievement in
+                            AchievementItemView(
+                                achievement: achievement,
+                                isCompleted: viewModel.isAchievementCompleted(achievement.id),
+                                isNotified: viewModel.isAchievementNotified(achievement.id),
+                                onClaim: {
+                                    viewModel.claimReward(for: achievement.id)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.vertical)
+                    .opacity(contentOpacity)
+                    .offset(y: contentOffset)
+                }
+                .frame(maxWidth: 450)
+                .padding(.vertical)
+                .padding(.horizontal, 30)
+                .background(
+                    Image(.underlay)
+                        .resizable()
+                )
+                
+                Spacer()
+            }
+            .padding()
+            .onAppear {
+                viewModel.appViewModel = appViewModel
+                
+                withAnimation(.easeOut(duration: 0.5).delay(0.3)) {
+                    contentOpacity = 1.0
+                    contentOffset = 0
+                }
+            }
+        }
+    }
+}
+
+struct AchievementItemView: View {
+    let achievement: Achievement
+    let isCompleted: Bool
+    let isNotified: Bool
+    let onClaim: () -> Void
+    
+    @State private var animate = false
+    
+    var body: some View {
+        VStack {
+            // Achievement icon
+            Image(achievement.imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100)
+                .scaleEffect(animate && isCompleted && !isNotified ? 1.1 : 1.0)
+                .animation(
+                    Animation.easeInOut(duration: 1.5)
+                        .repeatForever(autoreverses: true),
+                    value: animate
+                )
+                .onAppear {
+                    animate = true
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    // Claim reward button or status
+                    VStack {
+                        if isCompleted {
+                            if isNotified {
+                                // "Completed" status
+                                Image(systemName: "checkmark.circle.fill")
+                                    .resizable()
+                                    .frame(width: 20, height: 25)
+                                    .foregroundColor(.green)
+                            } else {
+                                // Claim reward button
+                                Button(action: onClaim) {
+                                    HStack {
+                                        Text("+\(GameConstants.dailyReward)")
+                                            .fontPRG(14)
+                                        
+                                        Image("coin")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(height: 20)
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        Capsule()
+                                            .foregroundStyle(.yellow)
+                                            .shadow(color: .black.opacity(0.5), radius: 3)
+                                    )
+                                    .scaleEffect(animate ? 1.05 : 1.0)
+                                    .animation(
+                                        Animation.easeInOut(duration: 0.8)
+                                            .repeatForever(autoreverses: true),
+                                        value: animate
+                                    )
+                                }
+                            }
+                        } else {
+                            // "Locked" status
+                            Image(systemName: "lock.fill")
+                                .resizable()
+                                .frame(width: 20, height: 25)
+                                .foregroundColor(.white)
+                                .shadow(radius: 2)
+                        }
+                    }
+                }
+            
+            // Achievement information
+            VStack(spacing: 5) {
+                Text(achievement.title)
+                    .fontPRG(18)
+                
+                Text(achievement.description)
+                    .fontPRG(12)
+            }
+        }
+    }
+}
+
+#Preview {
+    AchievementView()
+        .environmentObject(AppViewModel())
+}

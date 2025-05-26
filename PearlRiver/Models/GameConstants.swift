@@ -32,7 +32,7 @@ struct GameConstants {
     static let achievementReward: Int = 10 // Награда за достижение
     
     // MARK: - Бонусная игра (пазл)
-    static let puzzleTimerDuration: TimeInterval = 10.0 // 10 секунд на сборку пазла
+    static let puzzleTimerDuration: TimeInterval = 20 // секунд на сборку пазла
     static let puzzleReward: Int = 10 // Награда амулетов за успешную сборку
     static let puzzleGridSize: Int = 3 // Пазл 3x3
     

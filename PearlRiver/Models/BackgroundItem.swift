@@ -30,9 +30,9 @@ struct BackgroundItem: Identifiable, Codable, Equatable {
             price: 100
         ),
         BackgroundItem(
-            id: "royal_chambers",
+            id: "old_chambers",
             name: "Royal Chambers",
-            imageName: "bg_royal_chambers",
+            imageName: "bg_old_chambers",
             price: 100
         )
     ]

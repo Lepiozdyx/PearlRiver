@@ -102,39 +102,31 @@ struct LevelButtonView: View {
                 action()
             }
         } label: {
-            ZStack {
-                // Button background
-                Image(.buttonCircle)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 60)
-                    .opacity(isUnlocked ? 1.0 : 0.7)
-                    .overlay(
-                        // Lock overlay for locked levels
-                        Group {
-                            if !isUnlocked {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 30))
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                        }
-                    )
-                    .overlay(alignment: .top) {
-                        // Stars for completed levels
-                        if isCompleted {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.yellow)
+            // Button background
+            Image(.buttonCircle)
+                .resizable()
+                .scaledToFit()
+                .frame(maxHeight: 100)
+                .opacity(isUnlocked ? 1.0 : 0.7)
+                .overlay(
+                    // Lock overlay for locked levels
+                    Group {
+                        if !isUnlocked {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(.white.opacity(0.8))
                         }
                     }
-                
-                // Level number
-                if isUnlocked {
-                    Text("\(level)")
-                        .fontPRG(26)
+                )
+                .overlay {
+                    // Level number
+                    if isUnlocked {
+                        Text("\(level)")
+                            .fontPRG(isCompleted ? 24 : 32)
+                            .colorMultiply(isCompleted ? .yellow : .white)
+                    }
                 }
-            }
-            .scaleEffect(isPressed ? 0.9 : 1.0)
+                .scaleEffect(isPressed ? 0.9 : 1.0)
         }
         .disabled(!isUnlocked)
         .onLongPressGesture(

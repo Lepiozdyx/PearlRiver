@@ -2,13 +2,14 @@ import SwiftUI
 
 struct PuzzleGameView: View {
     @StateObject private var viewModel = PuzzleGameViewModel()
+    @State private var amuletsAnimated = false
     
-    let onComplete: (Bool) -> Void // true если выиграл, false если проиграл
+    let onComplete: (Bool) -> Void
     
     var body: some View {
         ZStack {
             // Фон
-            Color.black.opacity(0.9)
+            Color.black.opacity(0.8)
                 .ignoresSafeArea()
             
             if viewModel.gameCompleted {
@@ -17,22 +18,25 @@ struct PuzzleGameView: View {
                     Text(viewModel.gameWon ? "PUZZLE COMPLETED!" : "TIME'S UP!")
                         .fontPRG(32)
                     
-                    Text(viewModel.gameWon ?
-                         "You earned \(GameConstants.puzzleReward) amulets!" :
-                         "You earned 0 amulets")
-                        .fontPRG(20)
+                    // Amulets earned
+                    HStack(spacing: 2) {
+                        Image(.amulet)
+                            .resizable()
+                            .frame(width: 40, height: 40)
+                            .rotationEffect(.degrees(amuletsAnimated ? -360 : 0))
+                        
+                        Text(
+                            viewModel.gameWon
+                            ? "+ \(GameConstants.puzzleReward)"
+                            : " 0 amulets"
+                        )
+                        .fontPRG(26)
+                    }
+                    .scaleEffect(amuletsAnimated ? 1.0 : 0)
+                    .opacity(amuletsAnimated ? 1.0 : 0)
                     
-                    Button(action: {
+                    ActionButtonView(title: "Continue", fontSize: 24, width: 250, height: 65) {
                         onComplete(viewModel.gameWon)
-                    }) {
-                        Text("CONTINUE")
-                            .fontPRG(24)
-                            .padding(.horizontal, 40)
-                            .padding(.vertical, 15)
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color.blue)
-                            )
                     }
                 }
             } else {
@@ -40,16 +44,22 @@ struct PuzzleGameView: View {
                 VStack(spacing: 20) {
                     // Заголовок и таймер
                     HStack {
-                        Text("PUZZLE BONUS")
-                            .fontPRG(24)
+                        Text("Bonus Game")
+                            .fontPRG(22)
                         
                         Spacer()
                         
-                        Text("\(Int(viewModel.timeRemaining))")
-                            .fontPRG(32)
-                            .foregroundColor(viewModel.timeRemaining <= 3 ? .red : .white)
+                        Image(.buttonRect)
+                            .resizable()
+                            .frame(width: 110, height: 50)
+                            .overlay {
+                                Text("0:\(Int(viewModel.timeRemaining))")
+                                    .fontPRG(30)
+                                    .colorMultiply(viewModel.timeRemaining <= 6 ? .red : .white)
+                                    .offset(y: 2)
+                            }
                     }
-                    .padding(.horizontal)
+                    .frame(width: 350)
                     
                     // Игровое поле
                     HStack(spacing: 40) {
@@ -58,7 +68,7 @@ struct PuzzleGameView: View {
                             Text("PIECES")
                                 .fontPRG(16)
                             
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 4) {
                                 ForEach(viewModel.shuffledPieces, id: \.self) { piece in
                                     PuzzlePieceView(
                                         piece: piece,
@@ -78,7 +88,7 @@ struct PuzzleGameView: View {
                             Text("TARGET")
                                 .fontPRG(16)
                             
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 4) {
                                 ForEach(0..<9, id: \.self) { index in
                                     PuzzleSlotView(
                                         targetNumber: index + 1,
@@ -97,9 +107,8 @@ struct PuzzleGameView: View {
                     }
                     
                     // Инструкция
-                    Text("Tap a piece, then tap a slot to place it in the correct order (1-9)")
+                    Text("Tap a piece, then tap a slot to place it in the correct order")
                         .fontPRG(14)
-                        .padding(.horizontal)
                         .opacity(0.8)
                     
                     Spacer()
@@ -109,6 +118,11 @@ struct PuzzleGameView: View {
         }
         .onAppear {
             viewModel.startNewGame()
+            
+            // Animate amulets
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5)) {
+                amuletsAnimated = true
+            }
         }
     }
 }

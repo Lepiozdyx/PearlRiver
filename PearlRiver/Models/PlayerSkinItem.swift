@@ -20,7 +20,7 @@ struct PlayerSkinItem: Identifiable, Codable, Equatable {
         PlayerSkinItem(
             id: "king_golden",
             name: "Golden King",
-            imageName: "player_king2",
+            imageName: "player_2king",
             price: 100
         ),
         PlayerSkinItem(
