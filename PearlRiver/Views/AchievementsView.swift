@@ -57,14 +57,7 @@ struct AchievementView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 10) {
                         ForEach(viewModel.achievements) { achievement in
-                            AchievementItemView(
-                                achievement: achievement,
-                                isCompleted: viewModel.isAchievementCompleted(achievement.id),
-                                isNotified: viewModel.isAchievementNotified(achievement.id),
-                                onClaim: {
-                                    viewModel.claimReward(for: achievement.id)
-                                }
-                            )
+                            // AchiItemView
                         }
                     }
                     .padding(.vertical)
@@ -94,7 +87,7 @@ struct AchievementView: View {
     }
 }
 
-struct AchievementItemView: View {
+struct AchiItemView: View {
     let achievement: Achievement
     let isCompleted: Bool
     let isNotified: Bool
@@ -104,7 +97,6 @@ struct AchievementItemView: View {
     
     var body: some View {
         VStack {
-            // Achievement icon
             Image(achievement.imageName)
                 .resizable()
                 .scaledToFit()
@@ -123,13 +115,11 @@ struct AchievementItemView: View {
                     VStack {
                         if isCompleted {
                             if isNotified {
-                                // "Completed" status
                                 Image(systemName: "checkmark.circle.fill")
                                     .resizable()
                                     .frame(width: 20, height: 25)
                                     .foregroundColor(.green)
                             } else {
-                                // Claim reward button
                                 Button(action: onClaim) {
                                     HStack {
                                         Text("+\(GameConstants.dailyReward)")
@@ -156,7 +146,6 @@ struct AchievementItemView: View {
                                 }
                             }
                         } else {
-                            // "Locked" status
                             Image(systemName: "lock.fill")
                                 .resizable()
                                 .frame(width: 20, height: 25)

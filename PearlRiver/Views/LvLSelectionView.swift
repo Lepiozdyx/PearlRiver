@@ -43,7 +43,7 @@ struct LvLSelectionView: View {
                 // Title
                 Image(.buttonRect)
                     .resizable()
-                    .frame(width: 250, height: 100)
+                    .frame(width: 250, height: 80)
                     .overlay {
                         Text("Level Select")
                             .fontPRG(24)
