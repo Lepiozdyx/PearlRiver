@@ -62,18 +62,14 @@ class GameViewModel: ObservableObject {
                 self.startGameTimer()
                 self.gameScene?.resumeGame()
             }
-            
-            print("GameViewModel: Game paused = \(self.isPaused), forPuzzle = \(forPuzzle)")
         }
     }
     
     func pauseGame() {
-        print("GameViewModel: pauseGame() called")
         togglePause(true)
     }
     
     func resumeGame() {
-        print("GameViewModel: resumeGame() called")
         togglePause(false)
     }
     
@@ -100,8 +96,6 @@ class GameViewModel: ObservableObject {
             
             self.setupTimers()
             self.gameScene?.resetGame()
-            
-            print("GameViewModel: Game reset completed")
         }
     }
     
@@ -109,26 +103,19 @@ class GameViewModel: ObservableObject {
 
     func startPuzzleGame() {
         guard !isPaused && !showGameOverOverlay else {
-            print("GameViewModel: Cannot start puzzle - game is paused or game over")
             return
         }
-        
-        print("GameViewModel: Starting puzzle game")
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Используем forPuzzle: true чтобы принудительно паузить
+            // Юзаем forPuzzle: true чтобы принудительно паузить
             self.togglePause(true, forPuzzle: true)
             self.showPuzzleGame = true
-            
-            print("GameViewModel: Puzzle game started, isPaused: \(self.isPaused), showPuzzleGame: \(self.showPuzzleGame)")
         }
     }
 
     func completePuzzleGame(success: Bool) {
-        print("GameViewModel: Completing puzzle game with success: \(success)")
-        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
@@ -137,13 +124,9 @@ class GameViewModel: ObservableObject {
             if success {
                 self.amuletsCollected += GameConstants.puzzleReward
                 self.appViewModel?.gameState.recordPuzzleCompleted()
-                print("GameViewModel: Added \(GameConstants.puzzleReward) amulets, total: \(self.amuletsCollected)")
             }
             
-            // Автоматически возобновляем игру после завершения пазла
             self.togglePause(false)
-            
-            print("GameViewModel: Puzzle completed, resuming game. isPaused: \(self.isPaused)")
         }
     }
     
@@ -199,12 +182,9 @@ class GameViewModel: ObservableObject {
 // MARK: - GameSceneDelegate
 extension GameViewModel: GameSceneDelegate {
     func didCollectCoin() {
-        print("GameViewModel: didCollectCoin called")
-        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.coinsCollected += GameConstants.coinValue
-            print("GameViewModel: Coins collected updated to: \(self.coinsCollected)")
         }
     }
     

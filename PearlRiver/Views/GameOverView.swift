@@ -15,12 +15,10 @@ struct GameOverView: View {
     
     var body: some View {
         ZStack {
-            // Dark overlay
             Color.black.opacity(0.8)
                 .ignoresSafeArea()
             
             VStack {
-                // Title
                 Image(.underlay)
                     .resizable()
                     .frame(width: 300, height: 100)
@@ -93,17 +91,14 @@ struct GameOverView: View {
             .padding()
         }
         .onAppear {
-            // Animate content appearance
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 showContent = true
             }
             
-            // Animate coins
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3)) {
                 coinsAnimated = true
             }
             
-            // Animate amulets
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5)) {
                 amuletsAnimated = true
             }

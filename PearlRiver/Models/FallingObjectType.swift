@@ -44,11 +44,44 @@ enum FallingObjectType: Int, CaseIterable, Identifiable {
     }
     
     static func random(excludingKey: Bool = true) -> FallingObjectType {
-        let cases = excludingKey ?
-        FallingObjectType.allCases.filter({ $0 != .shield }) :
-        FallingObjectType.allCases
+        let weights: [(type: FallingObjectType, weight: Int)] = [
+            (.shield, 25),
+            (.vase, 25),
+            (.torch, 20),
+            (.coin, 20),
+            (.amulet, 10)
+        ]
         
-        let randomIndex = Int.random(in: 0..<cases.count)
-        return cases[randomIndex]
+        return weightedRandom(from: weights)
+    }
+    
+    private static func weightedRandom(from weights: [(type: FallingObjectType, weight: Int)]) -> FallingObjectType {
+        let totalWeight = weights.reduce(0) { $0 + $1.weight }
+        let randomValue = Int.random(in: 1...totalWeight)
+        
+        var currentWeight = 0
+        for (type, weight) in weights {
+            currentWeight += weight
+            if randomValue <= currentWeight {
+                return type
+            }
+        }
+        
+        return .vase
+    }
+    
+    // ДОПОЛНИТЕЛЬНО: Метод для получения вероятности спавна (для отладки)
+    static func getSpawnProbability(for type: FallingObjectType) -> Int {
+        switch type {
+        case .shield: return 25
+        case .vase: return 25
+        case .torch: return 25
+        case .coin: return 20
+        case .amulet: return 5
+        }
+    }
+    
+    static var gameObjectTypes: [FallingObjectType] {
+        return [.shield, .vase, .torch, .coin, .amulet]
     }
 }

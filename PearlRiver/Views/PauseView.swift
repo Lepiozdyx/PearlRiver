@@ -10,7 +10,6 @@ struct PauseView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 20) {
-                // Заголовок паузы
                 Image(.underlay)
                     .resizable()
                     .frame(width: 200, height: 70)
@@ -21,9 +20,6 @@ struct PauseView: View {
                     }
                 
                 VStack(spacing: 15) {
-                    // ИСПРАВЛЕНИЕ: Убрал обертку Button и передаю action напрямую в ActionButtonView
-                    
-                    // Continue button
                     ActionButtonView(
                         title: "Continue",
                         fontSize: 24,
@@ -31,7 +27,6 @@ struct PauseView: View {
                         height: 65
                     ) {
                         svm.play()
-                        print("PauseView: Continue button tapped")
                         appViewModel.resumeGame()
                     }
                     
@@ -43,7 +38,6 @@ struct PauseView: View {
                         height: 65
                     ) {
                         svm.play()
-                        print("PauseView: Restart button tapped")
                         appViewModel.restartLevel()
                     }
                     
@@ -55,7 +49,6 @@ struct PauseView: View {
                         height: 65
                     ) {
                         svm.play()
-                        print("PauseView: Menu button tapped")
                         appViewModel.goToMenu()
                     }
                 }
