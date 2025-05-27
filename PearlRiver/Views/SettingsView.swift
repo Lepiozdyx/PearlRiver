@@ -9,7 +9,6 @@ struct SettingsView: View {
             AppBGView()
             
             VStack {
-                // Header with back button and currency
                 HStack(alignment: .top) {
                     CircleButtonView(icon: "arrowshape.backward.fill", height: 65) {
                         svm.play()
@@ -23,7 +22,6 @@ struct SettingsView: View {
             .padding()
             
             VStack {
-                // Title
                 Image(.buttonRect)
                     .resizable()
                     .frame(width: 250, height: 80)

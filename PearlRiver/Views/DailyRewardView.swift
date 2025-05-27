@@ -14,16 +14,49 @@ struct DailyRewardView: View {
                         svm.play()
                         appViewModel.navigateTo(.menu)
                     }
+                    
                     Spacer()
                 }
+                Spacer()
+            }
+            .padding()
+            
+            VStack {
+                Image(.buttonRect)
+                    .resizable()
+                    .frame(width: 250, height: 80)
+                    .overlay {
+                        Text("Daily Reward")
+                            .fontPRG(24)
+                            .offset(y: 2)
+                    }
                 
                 Spacer()
                 
-                Text("Daily Reward")
-                    .fontPRG(32)
-                
-                Text("Coming Soon!")
-                    .fontPRG(24)
+                HStack {
+                    ForEach(1..<8) { day in
+                        Image(.buttonCircle)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100)
+                            .overlay {
+                                VStack(spacing: 4) {
+                                    Text("Day \(day)")
+                                        .fontPRG(18)
+                                    
+                                    HStack(spacing: 2) {
+                                        Image(.coin)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 25)
+                                        
+                                        Text("+ 10")
+                                            .fontPRG(16)
+                                    }
+                                }
+                            }
+                    }
+                }
                 
                 if appViewModel.canClaimDailyReward {
                     ActionButtonView(
@@ -38,7 +71,6 @@ struct DailyRewardView: View {
                 } else {
                     Text("Already claimed today")
                         .fontPRG(18)
-                        .opacity(0.7)
                 }
                 
                 Spacer()
