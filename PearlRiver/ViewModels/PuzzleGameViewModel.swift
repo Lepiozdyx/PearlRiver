@@ -2,14 +2,14 @@ import Foundation
 
 class PuzzleGameViewModel: ObservableObject {
     @Published var timeRemaining: Double = GameConstants.puzzleTimerDuration
-    @Published var shuffledPieces: [Int] = []
-    @Published var targetGrid: [Int?] = Array(repeating: nil, count: GameConstants.puzzleGridSize * GameConstants.puzzleGridSize)
-    @Published var selectedPiece: Int? = nil
+    @Published var shuffledPieces: [PuzzlePiece] = []
+    @Published var targetGrid: [PuzzlePiece?] = Array(repeating: nil, count: GameConstants.puzzleGridSize * GameConstants.puzzleGridSize)
+    @Published var selectedPiece: PuzzlePiece? = nil
     @Published var gameCompleted: Bool = false
     @Published var gameWon: Bool = false
+    @Published var currentPuzzle: PuzzleDefinition?
     
     private var timer: Timer?
-    private let correctOrder = Array(1...9) // Правильный порядок 1-9
     
     init() {
         startNewGame()
@@ -20,8 +20,19 @@ class PuzzleGameViewModel: ObservableObject {
     }
     
     func startNewGame() {
-        // Перемешиваем кусочки пазла
-        shuffledPieces = correctOrder.shuffled()
+        currentPuzzle = PuzzleDefinition.randomPuzzle()
+        
+        guard let puzzle = currentPuzzle else { return }
+        
+        let pieces = puzzle.pieces.map { piece in
+            PuzzlePiece(
+                puzzleId: puzzle.id,
+                position: piece.position,
+                imageName: piece.imageName
+            )
+        }
+        
+        shuffledPieces = pieces.shuffled()
         targetGrid = Array(repeating: nil, count: 9)
         selectedPiece = nil
         timeRemaining = GameConstants.puzzleTimerDuration
@@ -48,7 +59,7 @@ class PuzzleGameViewModel: ObservableObject {
         }
     }
     
-    func selectPiece(_ piece: Int) {
+    func selectPiece(_ piece: PuzzlePiece) {
         guard !gameCompleted else { return }
         selectedPiece = piece
     }
@@ -56,37 +67,60 @@ class PuzzleGameViewModel: ObservableObject {
     func placePieceAt(index: Int) {
         guard !gameCompleted,
               let piece = selectedPiece,
-              targetGrid[index] == nil else { return }
+              targetGrid[index] == nil else {
+            return
+        }
         
-        // Размещаем кусочек в сетке
         targetGrid[index] = piece
         
-        // Убираем кусочек из доступных
         if let pieceIndex = shuffledPieces.firstIndex(of: piece) {
             shuffledPieces.remove(at: pieceIndex)
         }
         
         selectedPiece = nil
         
-        // Проверяем победу
         checkWinCondition()
     }
     
     private func checkWinCondition() {
-        guard targetGrid.compactMap({ $0 }).count == 9 else { return }
-        
-        let isCorrect = targetGrid.enumerated().allSatisfy { index, piece in
-            return piece == index + 1
+        guard targetGrid.compactMap({ $0 }).count == 9 else {
+            return
         }
         
+        let isCorrect = targetGrid.enumerated().allSatisfy { index, piece in
+            guard let piece = piece else { return false }
+            let correctPosition = index + 1
+            let isCorrectlyPlaced = piece.position == correctPosition
+            
+            return isCorrectlyPlaced
+        }
+
         if isCorrect {
             endGame(won: true)
         }
     }
     
     private func endGame(won: Bool) {
-        timer?.invalidate()
-        gameCompleted = true
-        gameWon = won
+            timer?.invalidate()
+            
+            if won {
+                gameWon = true
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    guard let self = self else { return }
+                    self.gameCompleted = true
+                }
+            } else {
+                gameWon = false
+                gameCompleted = true
+            }
+        }
+    
+    func isPieceAvailable(_ piece: PuzzlePiece) -> Bool {
+        return shuffledPieces.contains(piece)
+    }
+    
+    func isPiecePlaced(_ piece: PuzzlePiece) -> Bool {
+        return targetGrid.contains(piece)
     }
 }

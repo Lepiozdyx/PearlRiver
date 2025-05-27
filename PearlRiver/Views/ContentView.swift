@@ -8,7 +8,6 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            // Main navigation
             switch appViewModel.currentScreen {
             case .menu:
                 MenuView()
@@ -61,10 +60,8 @@ struct ContentView: View {
     }
     
     private func setupApp() {
-        // Update palace income on app launch
         appViewModel.updatePalaceIncome()
         
-        // Start music if enabled
         if settings.musicIsOn && settings.soundIsOn {
             settings.playMusic()
         }
@@ -79,7 +76,6 @@ struct ContentView: View {
         case .background:
             settings.stopMusic()
             
-            // Pause game if active (как в Oneida)
             if appViewModel.currentScreen == .game {
                 appViewModel.pauseGame()
             }
@@ -89,7 +85,6 @@ struct ContentView: View {
         case .inactive:
             settings.stopMusic()
             
-            // Pause game if active
             if appViewModel.currentScreen == .game {
                 appViewModel.pauseGame()
             }

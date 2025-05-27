@@ -8,17 +8,14 @@ struct PuzzleGameView: View {
     
     var body: some View {
         ZStack {
-            // Фон
             Color.black.opacity(0.8)
                 .ignoresSafeArea()
             
             if viewModel.gameCompleted {
-                // Экран результата
                 VStack(spacing: 30) {
                     Text(viewModel.gameWon ? "PUZZLE COMPLETED!" : "TIME'S UP!")
                         .fontPRG(32)
                     
-                    // Amulets earned
                     HStack(spacing: 2) {
                         Image(.amulet)
                             .resizable()
@@ -40,40 +37,28 @@ struct PuzzleGameView: View {
                     }
                 }
             } else {
-                // Игровой экран
-                VStack(spacing: 20) {
-                    // Заголовок и таймер
-                    HStack {
-                        Text("Bonus Game")
-                            .fontPRG(22)
-                        
-                        Spacer()
-                        
-                        Image(.buttonRect)
-                            .resizable()
-                            .frame(width: 110, height: 50)
-                            .overlay {
-                                Text("0:\(Int(viewModel.timeRemaining))")
-                                    .fontPRG(20)
-                                    .colorMultiply(viewModel.timeRemaining <= 6 ? .red : .white)
-                                    .offset(y: 2)
-                            }
-                    }
-                    .frame(width: 350)
+                VStack(spacing: 10) {
+                    Image(.buttonRect)
+                        .resizable()
+                        .frame(width: 110, height: 50)
+                        .overlay {
+                            Text("0:\(Int(viewModel.timeRemaining))")
+                                .fontPRG(20)
+                                .colorMultiply(viewModel.timeRemaining <= 6 ? .red : .white)
+                                .offset(y: 2)
+                        }
                     
-                    // Игровое поле
+                    Spacer()
+                    
+                    // Grid
                     HStack(spacing: 40) {
-                        // Левая часть - перемешанные кусочки
                         VStack(spacing: 10) {
-                            Text("PIECES")
-                                .fontPRG(16)
-                            
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 4) {
-                                ForEach(viewModel.shuffledPieces, id: \.self) { piece in
-                                    PuzzlePieceView(
+                                ForEach(viewModel.shuffledPieces, id: \.id) { piece in
+                                    PuzzlePieceImageView(
                                         piece: piece,
                                         size: 60,
-                                        isSelected: viewModel.selectedPiece == piece
+                                        isSelected: viewModel.selectedPiece?.id == piece.id
                                     )
                                     .onTapGesture {
                                         viewModel.selectPiece(piece)
@@ -83,15 +68,11 @@ struct PuzzleGameView: View {
                             .frame(width: 200)
                         }
                         
-                        // Правая часть - целевая сетка
                         VStack(spacing: 10) {
-                            Text("TARGET")
-                                .fontPRG(16)
-                            
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 4) {
                                 ForEach(0..<9, id: \.self) { index in
-                                    PuzzleSlotView(
-                                        targetNumber: index + 1,
+                                    PuzzleSlotImageView(
+                                        targetPosition: index + 1,
                                         currentPiece: viewModel.targetGrid[index],
                                         size: 60
                                     )
@@ -106,12 +87,11 @@ struct PuzzleGameView: View {
                         }
                     }
                     
-                    // Инструкция
+                    Spacer()
+                    
                     Text("Tap a piece, then tap a slot to place it in the correct order")
                         .fontPRG(14)
                         .opacity(0.8)
-                    
-                    Spacer()
                 }
                 .padding()
             }
@@ -119,7 +99,6 @@ struct PuzzleGameView: View {
         .onAppear {
             viewModel.startNewGame()
             
-            // Animate amulets
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5)) {
                 amuletsAnimated = true
             }
@@ -127,47 +106,68 @@ struct PuzzleGameView: View {
     }
 }
 
-// MARK: - Puzzle Piece View
-struct PuzzlePieceView: View {
-    let piece: Int
+struct PuzzlePieceImageView: View {
+    let piece: PuzzlePiece
     let size: CGFloat
     let isSelected: Bool
     
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.yellow : Color.blue)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.clear)
                 .frame(width: size, height: size)
-            
-            Text("\(piece)")
-                .font(.system(size: size * 0.4, weight: .bold))
-                .foregroundColor(.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isSelected ? .yellow : .white.opacity(0.3), lineWidth: isSelected ? 1.5 : 0.5)
+                )
+                .overlay {
+                    Image(piece.imageName)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size - 2, height: size - 2)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            // Показываем номер позиции для отладки (можно убрать потом)
+                            Text("\(piece.position)")
+                                .fontPRG(14)
+                                .frame(width: 16, height: 16), alignment: .topTrailing)
+                            #warning("delete numbers")
+                }
         }
         .scaleEffect(isSelected ? 1.1 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }
 
-// MARK: - Puzzle Target Slot View
-struct PuzzleSlotView: View {
-    let targetNumber: Int
-    let currentPiece: Int?
+struct PuzzleSlotImageView: View {
+    let targetPosition: Int
+    let currentPiece: PuzzlePiece?
     let size: CGFloat
     
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(currentPiece != nil ? Color.green : Color.gray.opacity(0.3))
+            RoundedRectangle(cornerRadius: 6)
+                .foregroundStyle(
+                    currentPiece != nil
+                    ? .green.opacity(0.5)
+                    : .yellow.opacity(0.2)
+                )
                 .frame(width: size, height: size)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(.white.opacity(0.5), lineWidth: 1)
+                )
             
             if let piece = currentPiece {
-                Text("\(piece)")
-                    .font(.system(size: size * 0.4, weight: .bold))
-                    .foregroundColor(.white)
+                Image(piece.imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size - 2, height: size - 2)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    
             } else {
-                Text("\(targetNumber)")
-                    .font(.system(size: size * 0.3, weight: .light))
-                    .foregroundColor(.white.opacity(0.5))
+                Text("\(targetPosition)")
+                    .fontPRG(14)
             }
         }
     }
