@@ -109,7 +109,7 @@ struct AchiItemView: View {
             Image(achievement.imageName)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 100)
+                .frame(width: 150)
                 .colorMultiply(isCompleted ? .white : .black)
                 .scaleEffect(animate && isCompleted && !isNotified ? 1.1 : 1.0)
                 .animation(
@@ -179,7 +179,7 @@ struct AchiItemView: View {
                             .fontPRG(10)
                         
                         Text("\(progress.current)/\(progress.total)")
-                            .fontPRG(12)
+                            .fontPRG(10)
                     }
                 }
             }

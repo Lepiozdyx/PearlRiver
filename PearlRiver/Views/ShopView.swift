@@ -103,7 +103,7 @@ struct ShopView: View {
                         }
                     }
                 }
-                .frame(maxWidth: 500)
+                .frame(maxWidth: 550)
                 .opacity(contentOpacity)
                 .offset(y: contentOffset)
                 

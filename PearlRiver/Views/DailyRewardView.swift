@@ -60,9 +60,9 @@ struct DailyRewardView: View {
                 
                 if appViewModel.canClaimDailyReward {
                     ActionButtonView(
-                        title: "Claim +10 Coins",
+                        title: "Claim",
                         fontSize: 20,
-                        width: 250,
+                        width: 200,
                         height: 65
                     ) {
                         svm.play()
