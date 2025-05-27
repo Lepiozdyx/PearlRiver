@@ -1,52 +1,65 @@
 import SwiftUI
 
 struct PauseView: View {
-    
     @EnvironmentObject private var appViewModel: AppViewModel
-    @State private var isProcessingAction = false
+    @StateObject private var svm = SettingsViewModel.shared
     
     var body: some View {
         ZStack {
-            // Затемнение всего экрана
             Color.black.opacity(0.6)
                 .ignoresSafeArea()
             
-            VStack(spacing: 10) {
+            VStack(spacing: 20) {
+                // Заголовок паузы
                 Image(.underlay)
                     .resizable()
-                    .frame(width: 150, height: 65)
+                    .frame(width: 200, height: 70)
                     .overlay {
-                        Text("Pause")
+                        Text("PAUSED")
                             .fontPRG(24)
                             .offset(y: 2)
                     }
                 
-                // Continue button
-                ActionButtonView(title: "Continue", fontSize: 24, width: 250, height: 65) {
-                    appViewModel.resumeGame()
-                }
-                
-                // Restart button
-                ActionButtonView(title: "Restart", fontSize: 24, width: 250, height: 65) {
-                    guard !isProcessingAction else { return }
-                    isProcessingAction = true
+                VStack(spacing: 15) {
+                    // Continue button
+                    Button {
+                        svm.play()
+                        appViewModel.resumeGame()
+                    } label: {
+                        ActionButtonView(
+                            title: "Continue",
+                            fontSize: 24,
+                            width: 250,
+                            height: 65
+                        ) {}
+                    }
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // Restart button
+                    Button {
+                        svm.play()
                         appViewModel.restartLevel()
+                    } label: {
+                        ActionButtonView(
+                            title: "Restart",
+                            fontSize: 24,
+                            width: 250,
+                            height: 65
+                        ) {}
                     }
-                }
-                .opacity(isProcessingAction ? 0.7 : 1.0)
-                
-                // Menu button
-                ActionButtonView(title: "Menu", fontSize: 24, width: 250, height: 65) {
-                    guard !isProcessingAction else { return }
-                    isProcessingAction = true
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        appViewModel.navigateTo(.menu)
+                    // Menu button
+                    Button {
+                        svm.play()
+                        appViewModel.goToMenu()
+                    } label: {
+                        ActionButtonView(
+                            title: "Menu",
+                            fontSize: 24,
+                            width: 250,
+                            height: 65
+                        ) {}
                     }
                 }
-                .opacity(isProcessingAction ? 0.5 : 1.0)
             }
         }
     }

@@ -54,7 +54,7 @@ struct PuzzleGameView: View {
                             .frame(width: 110, height: 50)
                             .overlay {
                                 Text("0:\(Int(viewModel.timeRemaining))")
-                                    .fontPRG(30)
+                                    .fontPRG(20)
                                     .colorMultiply(viewModel.timeRemaining <= 6 ? .red : .white)
                                     .offset(y: 2)
                             }
@@ -127,10 +127,6 @@ struct PuzzleGameView: View {
     }
 }
 
-#Preview {
-    PuzzleGameView(onComplete: {_ in })
-}
-
 // MARK: - Puzzle Piece View
 struct PuzzlePieceView: View {
     let piece: Int
@@ -175,4 +171,8 @@ struct PuzzleSlotView: View {
             }
         }
     }
+}
+
+#Preview {
+    PuzzleGameView(onComplete: {_ in })
 }

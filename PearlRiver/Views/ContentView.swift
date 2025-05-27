@@ -26,9 +26,9 @@ struct ContentView: View {
                     .transition(.move(edge: .bottom))
                 
             case .myPalace:
-                Text("My Palace View - Coming Soon")
-                    .fontPRG(24)
-                    .transition(.move(edge: .trailing))
+                MyPalaceView()
+                    .environmentObject(appViewModel)
+                    .transition(.move(edge: .bottom))
                 
             case .settings:
                 SettingsView()
@@ -46,48 +46,56 @@ struct ContentView: View {
                     .transition(.move(edge: .trailing))
                 
             case .daily:
-                Text("Daily Reward View - Coming Soon")
+                DailyRewardView()
+                    .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
-            }
-            
-            // Puzzle game overlay - shown on top of game screen
-            if appViewModel.showPuzzleGame {
-                PuzzleGameView { success in
-                    appViewModel.completePuzzleGame(success: success)
-                }
-                .transition(.scale.combined(with: .opacity))
-                .zIndex(100)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: appViewModel.currentScreen)
-        .animation(.easeInOut(duration: 0.3), value: appViewModel.showPuzzleGame)
         .onAppear {
-            // Update palace income on app launch
-            appViewModel.updatePalaceIncome()
-            
-            // Start music if enabled
-            if settings.musicIsOn {
-                settings.playMusic()
-            }
+            setupApp()
         }
         .onChange(of: phase) { newPhase in
-            switch newPhase {
-            case .active:
-                // Update palace income when app becomes active
-                appViewModel.updatePalaceIncome()
-                settings.playMusic()
-                
-            case .background:
-                settings.stopMusic()
-                // Save game state when going to background
-                appViewModel.saveGameState()
-                
-            case .inactive:
-                settings.stopMusic()
-                
-            @unknown default:
-                break
+            handleScenePhaseChange(newPhase)
+        }
+    }
+    
+    private func setupApp() {
+        // Update palace income on app launch
+        appViewModel.updatePalaceIncome()
+        
+        // Start music if enabled
+        if settings.musicIsOn && settings.soundIsOn {
+            settings.playMusic()
+        }
+    }
+    
+    private func handleScenePhaseChange(_ newPhase: ScenePhase) {
+        switch newPhase {
+        case .active:
+            appViewModel.updatePalaceIncome()
+            settings.playMusic()
+            
+        case .background:
+            settings.stopMusic()
+            
+            // Pause game if active (как в Oneida)
+            if appViewModel.currentScreen == .game {
+                appViewModel.pauseGame()
             }
+            
+            appViewModel.saveGameState()
+            
+        case .inactive:
+            settings.stopMusic()
+            
+            // Pause game if active
+            if appViewModel.currentScreen == .game {
+                appViewModel.pauseGame()
+            }
+            
+        @unknown default:
+            break
         }
     }
 }

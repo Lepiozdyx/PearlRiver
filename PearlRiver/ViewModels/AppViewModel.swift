@@ -45,93 +45,118 @@ class AppViewModel: ObservableObject {
     }
     
     func goToMenu() {
+        print("AppViewModel: Returning to menu")
+        
+        // Cleanup game view model
+        if let gameViewModel = gameViewModel {
+            gameViewModel.cleanup()
+        }
         gameViewModel = nil
+        
         navigateTo(.menu)
     }
     
-    // MARK: - Game Methods
+    // MARK: - Game Methods (адаптированы по образцу Oneida)
     func startGame(level: Int? = nil) {
         let levelToStart = level ?? gameState.currentLevel
         
         // Validate level is unlocked
-        guard isLevelUnlocked(levelToStart) else { return }
+        guard isLevelUnlocked(levelToStart) else {
+            print("AppViewModel: Level \(levelToStart) is locked")
+            return
+        }
+        
+        print("AppViewModel: Starting game at level \(levelToStart)")
         
         gameLevel = levelToStart
         gameState.currentLevel = levelToStart
         
-        // Create new game view model
+        // Create new game view model (как в Oneida)
         gameViewModel = GameViewModel()
         gameViewModel?.appViewModel = self
         gameViewModel?.currentLevel = levelToStart
         
+        // Navigate to game screen
         navigateTo(.game)
         saveGameState()
         
-        // Start the game after navigation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.gameViewModel?.startGame()
+        print("AppViewModel: Game setup completed for level \(levelToStart)")
+    }
+    
+    // Методы паузы по образцу Oneida
+    func pauseGame() {
+        DispatchQueue.main.async {
+            self.gameViewModel?.togglePause(true)
+            self.objectWillChange.send()
         }
     }
     
-    func pauseGame() {
-        gameViewModel?.pauseGame()
-    }
-    
     func resumeGame() {
-        gameViewModel?.resumeGame()
+        DispatchQueue.main.async {
+            self.gameViewModel?.togglePause(false)
+            self.objectWillChange.send()
+        }
     }
     
     func restartLevel() {
-        gameViewModel?.resetGame()
-        
-        // Restart the game after reset
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.gameViewModel?.startGame()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.gameViewModel?.resetGame()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.objectWillChange.send()
+                
+                if let gameVM = self.gameViewModel {
+                    gameVM.objectWillChange.send()
+                }
+            }
         }
     }
     
     func goToNextLevel() {
-        if gameLevel < GameConstants.maxLevels {
-            gameLevel += 1
-            gameState.currentLevel = gameLevel
+        guard let currentGameViewModel = gameViewModel else {
+            print("AppViewModel: Cannot go to next level - no active game")
+            return
+        }
+        
+        let nextLevel = gameLevel + 1
+        
+        if nextLevel <= GameConstants.maxLevels {
+            print("AppViewModel: Moving to next level: \(nextLevel)")
+            
+            // Cleanup current game
+            currentGameViewModel.cleanup()
+            
+            // Update level
+            gameLevel = nextLevel
+            gameState.currentLevel = nextLevel
             saveGameState()
             
-            // Reset game view model and start new level
-            gameViewModel?.resetGame()
-            gameViewModel?.currentLevel = gameLevel
+            // Create new game view model for next level (как в Oneida)
+            gameViewModel = GameViewModel()
+            gameViewModel?.appViewModel = self
+            gameViewModel?.currentLevel = nextLevel
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                self?.gameViewModel?.startGame()
+            // Start new level after short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.objectWillChange.send()
             }
+            
         } else {
             // All levels completed, return to menu
+            print("AppViewModel: All levels completed, returning to menu")
             goToMenu()
         }
     }
     
-    // MARK: - Puzzle Game Methods
-    func showPuzzleGameOverlay(completion: @escaping (Bool) -> Void) {
-        puzzleCompletionHandler = completion
-        showPuzzleGame = true
-    }
-    
-    func completePuzzleGame(success: Bool) {
-        showPuzzleGame = false
-        
-        if success {
-            // Add amulets reward
-            addAmulets(GameConstants.puzzleReward)
-            gameState.recordPuzzleCompleted()
-            saveGameState()
-        }
-        
-        // Call completion handler
-        puzzleCompletionHandler?(success)
-        puzzleCompletionHandler = nil
-    }
-    
-    // MARK: - Level Completion
+    // MARK: - Level Completion (адаптировано по образцу Oneida)
     func completeLevel(coinsCollected: Int, amuletsCollected: Int, perfectRun: Bool) {
+        print("AppViewModel: Level \(gameLevel) completed")
+        print("  - Coins collected: \(coinsCollected)")
+        print("  - Amulets collected: \(amuletsCollected)")
+        print("  - Perfect run: \(perfectRun)")
+        
         // Add collected resources (coins already multiplied by 5 in GameViewModel)
         gameState.addCoins(coinsCollected)
         gameState.addAmulets(amuletsCollected)
@@ -150,6 +175,8 @@ class AppViewModel: ObservableObject {
         
         saveGameState()
         checkAchievements()
+        
+        print("AppViewModel: Level completion processed. Total coins: \(coins), amulets: \(amulets)")
     }
     
     // MARK: - Currency Methods

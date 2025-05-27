@@ -1,269 +1,170 @@
 import SpriteKit
 import SwiftUI
 
-// MARK: - Physics Categories
-struct PhysicsCategory {
-    static let none: UInt32 = 0
-    static let player: UInt32 = 0x1 << 0      // 1
-    static let obstacle: UInt32 = 0x1 << 1    // 2
-    static let coin: UInt32 = 0x1 << 2        // 4
-    static let amulet: UInt32 = 0x1 << 3      // 8
-    static let boundary: UInt32 = 0x1 << 4    // 16
-}
-
-// MARK: - Game Scene Delegate
 protocol GameSceneDelegate: AnyObject {
     func didCollectCoin()
     func didCollectAmulet()
     func didHitObstacle()
 }
 
-// MARK: - GameScene
 class GameScene: SKScene, SKPhysicsContactDelegate {
+    // MARK: - Constants
+    
+    private enum PhysicsCategory {
+        static let none: UInt32 = 0
+        static let player: UInt32 = 0x1 << 0
+        static let obstacle: UInt32 = 0x1 << 1
+        static let coin: UInt32 = 0x1 << 2
+        static let amulet: UInt32 = 0x1 << 3
+    }
     
     // MARK: - Properties
+    
     weak var gameDelegate: GameSceneDelegate?
+    private var player: SKSpriteNode?
+    private var isGameActive = false
+    private var objectsSpawnTimer: Timer?
     
-    // Game nodes
-    private var player: SKSpriteNode!
-    private var background: SKSpriteNode!
+    // Добавляем свойства для хранения ID скина и фона
+    private var skinId: String
+    private var backgroundId: String
+    private var level: Int
     
-    // Objects
-    private var fallingObjects: [SKSpriteNode] = []
+    // Размеры
+    private let playerWidth: CGFloat = GameConstants.playerSize.width
+    private let playerHeight: CGFloat = GameConstants.playerSize.height
     
-    // Game parameters
-    private let level: Int
-    private let backgroundId: String
-    private let skinId: String
+    // MARK: - Инициализация
     
-    // Timing
-    private var lastUpdateTime: TimeInterval = 0
-    private var lastSpawnTime: TimeInterval = 0
-    
-    // Game state
-    private var isGamePaused: Bool = false
-    
-    // Speed calculations
-    private var objectFallSpeed: CGFloat
-    private var spawnInterval: TimeInterval
-    
-    // MARK: - Initialization
     init(size: CGSize, level: Int, backgroundId: String, skinId: String) {
         self.level = level
         self.backgroundId = backgroundId
         self.skinId = skinId
-        
-        // Calculate level-based parameters
-        self.objectFallSpeed = GameConstants.objectFallSpeed(for: level)
-        self.spawnInterval = GameConstants.spawnInterval(for: level)
-        
         super.init(size: size)
     }
     
     required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        self.level = 1
+        self.backgroundId = "medieval_castle"
+        self.skinId = "king_default"
+        super.init(coder: aDecoder)
     }
     
-    // MARK: - Scene Lifecycle
+    // MARK: - Lifecycle
+    
     override func didMove(to view: SKView) {
-        // Setup physics
-        physicsWorld.gravity = CGVector(dx: 0, dy: 0)
-        physicsWorld.contactDelegate = self
+        backgroundColor = .black
         
-        // Setup game elements
         setupBackground()
+        setupPhysics()
         setupPlayer()
-        setupBoundaries()
         
-        // Start game
-        startGame()
+        isGameActive = true
+        startSpawningObjects()
     }
     
-    // MARK: - Setup Methods
+    // MARK: - Setup
+    
+    private func setupPhysics() {
+        physicsWorld.gravity = CGVector(dx: 0, dy: -GameConstants.gravity)
+        physicsWorld.contactDelegate = self
+    }
+    
     private func setupBackground() {
-        let backgroundTexture = SKTexture(imageNamed: BackgroundItem.getBackground(id: backgroundId).imageName)
-        background = SKSpriteNode(texture: backgroundTexture)
-        background.size = size
-        background.position = CGPoint(x: size.width / 2, y: size.height / 2)
-        background.zPosition = -1
+        let backgroundImageName = BackgroundItem.getBackground(id: backgroundId).imageName
+        let background = SKSpriteNode(imageNamed: backgroundImageName)
+        
+        let scaleX = frame.width / background.size.width
+        let scaleY = frame.height / background.size.height
+        let scale = max(scaleX, scaleY)
+        background.setScale(scale)
+        background.position = CGPoint(x: frame.midX, y: frame.midY)
+        background.zPosition = -100
+        
         addChild(background)
     }
     
     private func setupPlayer() {
-        let playerTexture = SKTexture(imageNamed: PlayerSkinItem.getSkin(id: skinId).imageName)
-        player = SKSpriteNode(texture: playerTexture)
-        player.size = GameConstants.playerSize
+        let playerImageName = PlayerSkinItem.getSkin(id: skinId).imageName
+        player = SKSpriteNode(imageNamed: playerImageName)
         
-        // Position at bottom center
-        let playerX = size.width * GameConstants.playerInitialX
-        let playerY = size.height * (1 - GameConstants.playerVerticalPosition)
-        player.position = CGPoint(x: playerX, y: playerY)
+        guard let player = player else { return }
         
-        // Physics body
-        let physicsSize = CGSize(
+        player.size = CGSize(width: playerWidth, height: playerHeight)
+        let playerY = frame.height * (1.0 - GameConstants.playerVerticalPosition)
+        player.position = CGPoint(x: frame.midX, y: playerY)
+        player.zPosition = 10
+        
+        player.physicsBody = SKPhysicsBody(rectangleOf: CGSize(
             width: player.size.width * GameConstants.playerPhysicsBodyScale,
             height: player.size.height * GameConstants.playerPhysicsBodyScale
-        )
-        player.physicsBody = SKPhysicsBody(rectangleOf: physicsSize)
-        player.physicsBody?.isDynamic = true
+        ))
+        player.physicsBody?.isDynamic = false
         player.physicsBody?.categoryBitMask = PhysicsCategory.player
         player.physicsBody?.contactTestBitMask = PhysicsCategory.obstacle | PhysicsCategory.coin | PhysicsCategory.amulet
-        player.physicsBody?.collisionBitMask = PhysicsCategory.boundary
-        player.physicsBody?.affectedByGravity = false
+        player.physicsBody?.collisionBitMask = PhysicsCategory.none
         
-        player.zPosition = 10
         addChild(player)
-        
-        // Add idle animation
-        addIdleAnimation()
-    }
-    
-    private func setupBoundaries() {
-        // Left boundary
-        let leftBoundary = SKNode()
-        leftBoundary.position = CGPoint(x: 0, y: size.height / 2)
-        leftBoundary.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 1, height: size.height))
-        leftBoundary.physicsBody?.isDynamic = false
-        leftBoundary.physicsBody?.categoryBitMask = PhysicsCategory.boundary
-        addChild(leftBoundary)
-        
-        // Right boundary
-        let rightBoundary = SKNode()
-        rightBoundary.position = CGPoint(x: size.width, y: size.height / 2)
-        rightBoundary.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 1, height: size.height))
-        rightBoundary.physicsBody?.isDynamic = false
-        rightBoundary.physicsBody?.categoryBitMask = PhysicsCategory.boundary
-        addChild(rightBoundary)
-    }
-    
-    // MARK: - Animations
-    private func addIdleAnimation() {
-        let scaleUp = SKAction.scale(to: 1.05, duration: 1.0)
-        let scaleDown = SKAction.scale(to: 0.95, duration: 1.0)
-        let sequence = SKAction.sequence([scaleUp, scaleDown])
-        let repeatForever = SKAction.repeatForever(sequence)
-        player.run(repeatForever)
-    }
-    
-    private func flashPlayer() {
-        // Remove previous flash if exists
-        player.removeAction(forKey: "flash")
-        
-        let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: GameConstants.playerFlashDuration)
-        let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: GameConstants.playerFlashDuration)
-        let flashSequence = SKAction.sequence([fadeOut, fadeIn])
-        let repeatFlash = SKAction.repeat(flashSequence, count: GameConstants.playerFlashCount)
-        
-        player.run(repeatFlash, withKey: "flash")
     }
     
     // MARK: - Game Control
-    func startGame() {
-        isGamePaused = false
-        lastUpdateTime = 0
-        lastSpawnTime = 0
+    
+    func resetGame() {
+        removeAllObjects()
+        isPaused = false
+        isGameActive = true
+        
+        // Отменяем все текущие таймеры
+        objectsSpawnTimer?.invalidate()
+        
+        // Запускаем новые таймеры
+        startSpawningObjects()
     }
     
     func pauseGame() {
-        isGamePaused = true
+        isGameActive = false
+        objectsSpawnTimer?.invalidate()
+        
+        // Останавливаем все движущиеся объекты
         self.isPaused = true
     }
     
     func resumeGame() {
-        if isGamePaused {
-            isGamePaused = false
-            lastUpdateTime = CACurrentMediaTime()
-            self.isPaused = false
-        }
+        isGameActive = true
+        self.isPaused = false
+        startSpawningObjects()
     }
     
-    func resetGame() {
-        // Remove all falling objects
-        for object in fallingObjects {
-            object.removeFromParent()
-        }
-        fallingObjects.removeAll()
+    private func startSpawningObjects() {
+        objectsSpawnTimer?.invalidate()
         
-        // Reset player position
-        let playerX = size.width * GameConstants.playerInitialX
-        let playerY = size.height * (1 - GameConstants.playerVerticalPosition)
-        player.position = CGPoint(x: playerX, y: playerY)
-        player.alpha = 1.0
-        
-        // Reset timers
-        lastUpdateTime = 0
-        lastSpawnTime = 0
-        
-        // Pause until explicitly resumed
-        isGamePaused = true
-        self.isPaused = true
-    }
-    
-    // MARK: - Game Loop
-    override func update(_ currentTime: TimeInterval) {
-        // Initialize lastUpdateTime
-        if lastUpdateTime == 0 {
-            lastUpdateTime = currentTime
-        }
-        
-        let deltaTime = currentTime - lastUpdateTime
-        lastUpdateTime = currentTime
-        
-        if isGamePaused {
-            return
-        }
-        
-        // Update falling objects
-        updateFallingObjects(deltaTime: deltaTime)
-        
-        // Spawn new objects
-        if currentTime - lastSpawnTime > spawnInterval {
-            spawnObject()
-            lastSpawnTime = currentTime
-        }
-        
-        // Clean up off-screen objects
-        cleanupObjects()
-    }
-    
-    private func updateFallingObjects(deltaTime: TimeInterval) {
-        for object in fallingObjects {
-            object.position.y -= objectFallSpeed * CGFloat(deltaTime)
-            
-            // Update rotation for coins and amulets
-            if let userData = object.userData,
-               let typeRawValue = userData["type"] as? Int,
-               let type = FallingObjectType(rawValue: typeRawValue) {
-                if type == .coin || type == .amulet {
-                    object.zRotation += CGFloat(deltaTime) * 2 * .pi
-                }
-            }
+        let spawnInterval = GameConstants.spawnInterval(for: level)
+        objectsSpawnTimer = Timer.scheduledTimer(withTimeInterval: spawnInterval, repeats: true) { [weak self] _ in
+            guard let self = self, self.isGameActive else { return }
+            self.spawnObject()
         }
     }
     
     private func spawnObject() {
         let objectType = FallingObjectType.random()
-        let texture = SKTexture(imageNamed: objectType.imageName)
-        let object = SKSpriteNode(texture: texture)
         
+        let object = SKSpriteNode(imageNamed: objectType.imageName)
         object.size = objectType.size
         
-        // Random X position
-        let minX = GameConstants.objectSpawnMinX + object.size.width / 2
-        let maxX = size.width - GameConstants.objectSpawnMaxX - object.size.width / 2
+        // Случайная позиция по X с отступами от краев
+        let minX = GameConstants.objectSpawnMinX + object.size.width/2
+        let maxX = size.width - GameConstants.objectSpawnMaxX - object.size.width/2
         let randomX = CGFloat.random(in: minX...maxX)
         
-        // Start above screen
-        object.position = CGPoint(x: randomX, y: size.height + object.size.height / 2)
+        object.position = CGPoint(x: randomX, y: size.height + object.size.height)
         object.zPosition = 5
         
-        // Physics body
+        // Физика
         object.physicsBody = SKPhysicsBody(rectangleOf: object.size)
-        object.physicsBody?.isDynamic = true
         object.physicsBody?.affectedByGravity = false
         object.physicsBody?.allowsRotation = false
         
-        // Set category based on type
+        // Устанавливаем категорию в зависимости от типа объекта
         switch objectType {
         case .coin:
             object.physicsBody?.categoryBitMask = PhysicsCategory.coin
@@ -278,193 +179,221 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         object.physicsBody?.contactTestBitMask = PhysicsCategory.player
         object.physicsBody?.collisionBitMask = PhysicsCategory.none
         
-        // Store type in userData
-        object.userData = ["type": objectType.rawValue]
-        
         addChild(object)
-        fallingObjects.append(object)
+        
+        // Анимация падения
+        let fallSpeed = GameConstants.objectFallSpeed(for: level)
+        let fallDistance = size.height + object.size.height * 2
+        let fallDuration = TimeInterval(fallDistance / fallSpeed)
+        
+        let fallAction = SKAction.moveBy(x: 0, y: -fallDistance, duration: fallDuration)
+        let removeAction = SKAction.removeFromParent()
+        let sequence = SKAction.sequence([fallAction, removeAction])
+        
+        object.run(sequence)
     }
     
     private func addCoinAnimation(to node: SKSpriteNode) {
-        // Add glow effect
-        let glow = SKSpriteNode(color: .yellow, size: CGSize(width: node.size.width * 1.5, height: node.size.height * 1.5))
-        glow.alpha = 0.3
-        glow.zPosition = -1
-        glow.blendMode = .add
-        node.addChild(glow)
-        
-        // Pulse animation
-        let fadeIn = SKAction.fadeAlpha(to: 0.6, duration: 0.5)
-        let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 0.5)
-        let pulse = SKAction.sequence([fadeIn, fadeOut])
-        glow.run(SKAction.repeatForever(pulse))
+        let rotateAction = SKAction.rotate(byAngle: .pi * 2, duration: GameConstants.coinRotationDuration)
+        let repeatAction = SKAction.repeatForever(rotateAction)
+        node.run(repeatAction)
     }
     
     private func addAmuletAnimation(to node: SKSpriteNode) {
-        // Add purple glow
-        let glow = SKSpriteNode(color: .purple, size: CGSize(width: node.size.width * 2, height: node.size.height * 2))
-        glow.alpha = 0.4
-        glow.zPosition = -1
-        glow.blendMode = .add
-        node.addChild(glow)
-        
-        // Sparkle effect
         let scaleUp = SKAction.scale(to: 1.2, duration: GameConstants.amuletGlowDuration / 2)
         let scaleDown = SKAction.scale(to: 0.8, duration: GameConstants.amuletGlowDuration / 2)
-        let sparkle = SKAction.sequence([scaleUp, scaleDown])
-        glow.run(SKAction.repeatForever(sparkle))
+        let sequence = SKAction.sequence([scaleUp, scaleDown])
+        let repeatAction = SKAction.repeatForever(sequence)
+        node.run(repeatAction)
     }
     
-    private func cleanupObjects() {
-        fallingObjects = fallingObjects.filter { object in
-            if object.position.y < -object.size.height {
-                object.removeFromParent()
-                return false
+    private func removeAllObjects() {
+        self.enumerateChildNodes(withName: "//*") { node, _ in
+            if node.physicsBody?.categoryBitMask == PhysicsCategory.obstacle ||
+               node.physicsBody?.categoryBitMask == PhysicsCategory.coin ||
+               node.physicsBody?.categoryBitMask == PhysicsCategory.amulet {
+                node.removeFromParent()
             }
-            return true
         }
     }
     
     // MARK: - Touch Handling
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        movePlayer(to: location.x)
+        for touch in touches {
+            let location = touch.location(in: self)
+            movePlayer(to: location)
+        }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        movePlayer(to: location.x)
+        for touch in touches {
+            let location = touch.location(in: self)
+            movePlayer(to: location)
+        }
     }
     
-    private func movePlayer(to xPosition: CGFloat) {
-        guard !isGamePaused else { return }
+    private func movePlayer(to location: CGPoint) {
+        guard let player = player, isGameActive else { return }
         
-        // Clamp position within boundaries
+        // Ограничение по краям экрана
         let minX = player.size.width / 2
         let maxX = size.width - player.size.width / 2
-        let clampedX = max(minX, min(maxX, xPosition))
+        let newX = min(maxX, max(minX, location.x))
         
-        // Smooth movement
-        let moveAction = SKAction.moveTo(x: clampedX, duration: 0.1)
+        // Плавное перемещение
+        let moveAction = SKAction.moveTo(x: newX, duration: 0.1)
         player.run(moveAction)
     }
     
-    // MARK: - Collisions
+    // MARK: - Collision Handling
+    
     func didBegin(_ contact: SKPhysicsContact) {
-        let collision = contact.bodyA.categoryBitMask | contact.bodyB.categoryBitMask
+        let bodyA = contact.bodyA
+        let bodyB = contact.bodyB
         
-        if collision == PhysicsCategory.player | PhysicsCategory.coin {
-            if let coin = (contact.bodyA.categoryBitMask == PhysicsCategory.coin ? contact.bodyA.node : contact.bodyB.node) as? SKSpriteNode {
-                handleCoinCollection(coin)
-            }
-        } else if collision == PhysicsCategory.player | PhysicsCategory.amulet {
-            if let amulet = (contact.bodyA.categoryBitMask == PhysicsCategory.amulet ? contact.bodyA.node : contact.bodyB.node) as? SKSpriteNode {
-                handleAmuletCollection(amulet)
-            }
-        } else if collision == PhysicsCategory.player | PhysicsCategory.obstacle {
-            if let obstacle = (contact.bodyA.categoryBitMask == PhysicsCategory.obstacle ? contact.bodyA.node : contact.bodyB.node) as? SKSpriteNode {
-                handleObstacleHit(obstacle)
-            }
+        if (bodyA.categoryBitMask == PhysicsCategory.player && bodyB.categoryBitMask == PhysicsCategory.coin) ||
+            (bodyA.categoryBitMask == PhysicsCategory.coin && bodyB.categoryBitMask == PhysicsCategory.player) {
+            // Столкновение игрока и монеты
+            let coinBody = bodyA.categoryBitMask == PhysicsCategory.coin ? bodyA : bodyB
+            handleCoinCollection(coinBody.node)
+        } else if (bodyA.categoryBitMask == PhysicsCategory.player && bodyB.categoryBitMask == PhysicsCategory.amulet) ||
+                    (bodyA.categoryBitMask == PhysicsCategory.amulet && bodyB.categoryBitMask == PhysicsCategory.player) {
+            // Столкновение игрока и амулета
+            let amuletBody = bodyA.categoryBitMask == PhysicsCategory.amulet ? bodyA : bodyB
+            handleAmuletCollection(amuletBody.node)
+        } else if (bodyA.categoryBitMask == PhysicsCategory.player && bodyB.categoryBitMask == PhysicsCategory.obstacle) ||
+                    (bodyA.categoryBitMask == PhysicsCategory.obstacle && bodyB.categoryBitMask == PhysicsCategory.player) {
+            // Столкновение игрока и препятствия
+            let obstacleBody = bodyA.categoryBitMask == PhysicsCategory.obstacle ? bodyA : bodyB
+            handleObstacleHit(obstacleBody.node)
         }
     }
     
-    private func handleCoinCollection(_ coin: SKSpriteNode) {
-        // Create collection effect
-        createCollectionEffect(at: coin.position, color: .yellow)
+    private func handleCoinCollection(_ node: SKNode?) {
+        guard isGameActive else { return }
         
-        // Remove coin
-        coin.removeFromParent()
-        if let index = fallingObjects.firstIndex(of: coin) {
-            fallingObjects.remove(at: index)
-        }
-        
-        // Notify delegate
         gameDelegate?.didCollectCoin()
+        
+        // Добавляем эффект сбора
+        showCollectionEffect(at: node?.position ?? .zero, isSuccess: true)
+        
+        // Удаляем монету
+        node?.removeFromParent()
     }
     
-    private func handleAmuletCollection(_ amulet: SKSpriteNode) {
-        // Create special effect
-        createCollectionEffect(at: amulet.position, color: .purple)
+    private func handleAmuletCollection(_ node: SKNode?) {
+        guard isGameActive else { return }
         
-        // Remove amulet
-        amulet.removeFromParent()
-        if let index = fallingObjects.firstIndex(of: amulet) {
-            fallingObjects.remove(at: index)
-        }
-        
-        // Notify delegate
         gameDelegate?.didCollectAmulet()
+        
+        // Добавляем эффект сбора
+        showCollectionEffect(at: node?.position ?? .zero, isSuccess: true, isAmulet: true)
+        
+        // Удаляем амулет
+        node?.removeFromParent()
     }
     
-    private func handleObstacleHit(_ obstacle: SKSpriteNode) {
-        // Flash player
+    private func handleObstacleHit(_ node: SKNode?) {
+        guard isGameActive else { return }
+        
+        gameDelegate?.didHitObstacle()
+        
+        // Добавляем эффект попадания и мигание игрока
+        showCollectionEffect(at: node?.position ?? .zero, isSuccess: false)
         flashPlayer()
         
-        // Create hit effect
-        createHitEffect(at: player.position)
+        // Удаляем препятствие
+        node?.removeFromParent()
+    }
+    
+    private func flashPlayer() {
+        guard let player = player else { return }
         
-        // Remove obstacle
-        obstacle.removeFromParent()
-        if let index = fallingObjects.firstIndex(of: obstacle) {
-            fallingObjects.remove(at: index)
+        // Убираем предыдущую анимацию мигания если есть
+        player.removeAction(forKey: "flash")
+        
+        let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: GameConstants.playerFlashDuration)
+        let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: GameConstants.playerFlashDuration)
+        let flashSequence = SKAction.sequence([fadeOut, fadeIn])
+        let repeatFlash = SKAction.repeat(flashSequence, count: GameConstants.playerFlashCount)
+        
+        player.run(repeatFlash, withKey: "flash")
+    }
+    
+    private func showCollectionEffect(at position: CGPoint, isSuccess: Bool, isAmulet: Bool = false) {
+        // Создаем эмиттер частиц для эффекта
+        let emitterName = isAmulet ? "AmuletEffect" : (isSuccess ? "CoinCollectEffect" : "ObstacleHitEffect")
+        let emitter = createParticleEffect(named: emitterName, at: position)
+        addChild(emitter)
+        
+        // Автоматически убираем через небольшое время
+        let wait = SKAction.wait(forDuration: 0.7)
+        let remove = SKAction.removeFromParent()
+        emitter.run(SKAction.sequence([wait, remove]))
+    }
+    
+    private func createParticleEffect(named: String, at position: CGPoint) -> SKEmitterNode {
+        let emitter = SKEmitterNode()
+        emitter.position = position
+        
+        // Создаем простую частицу
+        let particleNode = SKShapeNode(circleOfRadius: 3)
+        particleNode.fillColor = .white
+        particleNode.strokeColor = .clear
+        
+        emitter.particleTexture = SKView().texture(from: particleNode)
+        
+        switch named {
+        case "CoinCollectEffect":
+            emitter.particleBirthRate = 100
+            emitter.numParticlesToEmit = 30
+            emitter.particleLifetime = 0.5
+            emitter.particleSpeed = 100
+            emitter.particleSpeedRange = 50
+            emitter.emissionAngle = 0
+            emitter.emissionAngleRange = CGFloat.pi * 2
+            emitter.particleAlpha = 0.8
+            emitter.particleAlphaRange = 0.2
+            emitter.particleAlphaSpeed = -1.0
+            emitter.particleScale = 0.2
+            emitter.particleScaleRange = 0.1
+            emitter.particleColor = .green
+            
+        case "ObstacleHitEffect":
+            emitter.particleBirthRate = 80
+            emitter.numParticlesToEmit = 20
+            emitter.particleLifetime = 0.3
+            emitter.particleSpeed = 80
+            emitter.particleSpeedRange = 40
+            emitter.emissionAngle = CGFloat.pi * 1.5
+            emitter.emissionAngleRange = CGFloat.pi / 2
+            emitter.particleAlpha = 0.8
+            emitter.particleAlphaRange = 0.2
+            emitter.particleAlphaSpeed = -2.0
+            emitter.particleScale = 0.2
+            emitter.particleScaleRange = 0.1
+            emitter.particleColor = .red
+            
+        case "AmuletEffect":
+            emitter.particleBirthRate = 150
+            emitter.numParticlesToEmit = 50
+            emitter.particleLifetime = 0.7
+            emitter.particleSpeed = 120
+            emitter.particleSpeedRange = 60
+            emitter.emissionAngle = 0
+            emitter.emissionAngleRange = CGFloat.pi * 2
+            emitter.particleAlpha = 1.0
+            emitter.particleAlphaRange = 0.2
+            emitter.particleAlphaSpeed = -1.0
+            emitter.particleScale = 0.3
+            emitter.particleScaleRange = 0.1
+            emitter.particleColor = .purple
+            
+        default:
+            break
         }
         
-        // Notify delegate
-        gameDelegate?.didHitObstacle()
-    }
-    
-    // MARK: - Effects
-    private func createCollectionEffect(at position: CGPoint, color: UIColor) {
-        let emitter = SKEmitterNode()
-        emitter.position = position
-        emitter.particleBirthRate = 100
-        emitter.numParticlesToEmit = 20
-        emitter.particleLifetime = 0.5
-        emitter.particleSpeed = 100
-        emitter.particleSpeedRange = 50
-        emitter.emissionAngleRange = .pi * 2
-        emitter.particleScale = 0.2
-        emitter.particleScaleRange = 0.1
-        emitter.particleColor = color
-        emitter.particleColorBlendFactor = 1.0
-        emitter.particleAlpha = 0.8
-        emitter.particleAlphaSpeed = -1.5
-        emitter.zPosition = 15
-        
-        addChild(emitter)
-        
-        let removeAction = SKAction.sequence([
-            SKAction.wait(forDuration: 1.0),
-            SKAction.removeFromParent()
-        ])
-        emitter.run(removeAction)
-    }
-    
-    private func createHitEffect(at position: CGPoint) {
-        let emitter = SKEmitterNode()
-        emitter.position = position
-        emitter.particleBirthRate = 50
-        emitter.numParticlesToEmit = 10
-        emitter.particleLifetime = 0.3
-        emitter.particleSpeed = 80
-        emitter.particleSpeedRange = 40
-        emitter.emissionAngleRange = .pi * 2
-        emitter.particleScale = 0.3
-        emitter.particleScaleRange = 0.2
-        emitter.particleColor = .red
-        emitter.particleColorBlendFactor = 1.0
-        emitter.particleAlpha = 0.7
-        emitter.particleAlphaSpeed = -2.0
-        emitter.zPosition = 15
-        
-        addChild(emitter)
-        
-        let removeAction = SKAction.sequence([
-            SKAction.wait(forDuration: 0.5),
-            SKAction.removeFromParent()
-        ])
-        emitter.run(removeAction)
+        return emitter
     }
 }
