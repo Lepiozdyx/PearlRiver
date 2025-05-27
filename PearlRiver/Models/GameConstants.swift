@@ -12,7 +12,7 @@ struct GameConstants {
     static let playerSize = CGSize(width: 75, height: 150) // Размер персонажа
     
     // MARK: - Падающие объекты
-    static let objectFallBaseSpeed: CGFloat = 100.0 // Базовая скорость падения объектов
+    static let objectFallBaseSpeed: CGFloat = 150.0 // Базовая скорость падения объектов
     static let objectSpawnInterval: TimeInterval = 1.5 // Интервал появления объектов
     static let objectSpawnMinX: CGFloat = 40 // Минимальный отступ от края экрана
     static let objectSpawnMaxX: CGFloat = 40 // Максимальный отступ от края экрана
@@ -61,12 +61,12 @@ struct GameConstants {
     }
     
     // MARK: - Анимации
-    static let coinRotationDuration: TimeInterval = 1.0
+    static let coinRotationDuration: TimeInterval = 1.5
     static let amuletGlowDuration: TimeInterval = 1.5
-    static let playerFlashDuration: TimeInterval = 0.2
+    static let playerFlashDuration: TimeInterval = 0.3
     static let playerFlashCount: Int = 3
     
     // MARK: - Физика
     static let playerPhysicsBodyScale: CGFloat = 0.8 // Масштаб физического тела игрока
-    static let gravity: CGFloat = 0 // Гравитация отключена (объекты падают с постоянной скоростью)
+    static let gravity: CGFloat = 1 // Гравитация отключена (объекты падают с постоянной скоростью)
 }

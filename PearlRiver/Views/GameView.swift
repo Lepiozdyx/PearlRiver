@@ -75,7 +75,7 @@ struct GameUIOverlayView: View {
             
             if gameViewModel.showGameOverOverlay {
                 GameOverView(
-                    coinsEarned: gameViewModel.coinsCollected * GameConstants.coinValue,
+                    coinsEarned: gameViewModel.coinsCollected,
                     amuletsEarned: gameViewModel.amuletsCollected,
                     currentLevel: gameViewModel.currentLevel,
                     isLastLevel: gameViewModel.currentLevel >= GameConstants.maxLevels

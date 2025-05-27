@@ -203,14 +203,12 @@ extension GameViewModel: GameSceneDelegate {
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.coinsCollected += 1
+            self.coinsCollected += GameConstants.coinValue
             print("GameViewModel: Coins collected updated to: \(self.coinsCollected)")
         }
     }
     
     func didCollectAmulet() {
-        print("GameViewModel: didCollectAmulet called")
-        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.startPuzzleGame()
@@ -218,27 +216,17 @@ extension GameViewModel: GameSceneDelegate {
     }
     
     func didHitObstacle() {
-        print("GameViewModel: didHitObstacle called")
-        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
             self.obstaclesHit += 1
             self.perfectRun = false
-            #warning("")
-            // Вычитаем 1 монету из общей казны согласно ТЗ
-            if let appViewModel = self.appViewModel {
-                if appViewModel.gameState.coins > 0 {
-                    var gameState = appViewModel.gameState
-                    gameState.addCoins(-1)
-                    appViewModel.gameState = gameState
-                    appViewModel.saveGameState()
-                }
+            
+            if self.coinsCollected > 0 {
+                self.coinsCollected -= 1
             }
             
             self.appViewModel?.gameState.recordObstacleHit()
-            
-            print("GameViewModel: Obstacle hit processed, obstacles hit: \(self.obstaclesHit)")
         }
     }
 }
