@@ -1,6 +1,5 @@
 import SwiftUI
 import SpriteKit
-import Combine
 
 class GameViewModel: ObservableObject {
     // MARK: - Published Properties
@@ -18,7 +17,6 @@ class GameViewModel: ObservableObject {
     // MARK: - Private Properties
     private var gameScene: GameScene?
     private var gameTimer: Timer?
-    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Public Properties
     weak var appViewModel: AppViewModel?
@@ -47,44 +45,48 @@ class GameViewModel: ObservableObject {
     }
     
     func togglePause(_ paused: Bool) {
-        if paused && (showGameOverOverlay || showPuzzleGame) {
-            return
-        }
-        
-        isPaused = paused
-        
-        if paused {
-            gameTimer?.invalidate()
-            gameScene?.pauseGame()
-        } else {
-            startGameTimer()
-            gameScene?.resumeGame()
-        }
-        
+        // ИСПРАВЛЕНИЕ: Немедленное обновление на главном потоке
         DispatchQueue.main.async { [weak self] in
-            self?.objectWillChange.send()
+            guard let self = self else { return }
+            
+            // Не паузим если показаны оверлеи
+            if paused && (self.showGameOverOverlay || self.showPuzzleGame) {
+                return
+            }
+            
+            self.isPaused = paused
+            
+            if paused {
+                self.gameTimer?.invalidate()
+                self.gameScene?.pauseGame()
+            } else {
+                self.startGameTimer()
+                self.gameScene?.resumeGame()
+            }
+            
+            print("GameViewModel: Game paused = \(self.isPaused)")
         }
     }
     
     func pauseGame() {
+        print("GameViewModel: pauseGame() called")
         togglePause(true)
     }
     
     func resumeGame() {
+        print("GameViewModel: resumeGame() called")
         togglePause(false)
     }
     
     func resetGame() {
-        self.showGameOverOverlay = false
-        self.showPuzzleGame = false
-        
-        self.objectWillChange.send()
-        
-        gameTimer?.invalidate()
-        gameScene?.pauseGame()
-        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            
+            self.showGameOverOverlay = false
+            self.showPuzzleGame = false
+            
+            self.gameTimer?.invalidate()
+            self.gameScene?.pauseGame()
             
             self.coinsCollected = 0
             self.amuletsCollected = 0
@@ -98,28 +100,36 @@ class GameViewModel: ObservableObject {
             self.showPuzzleGame = false
             
             self.setupTimers()
-            
             self.gameScene?.resetGame()
             
-            self.objectWillChange.send()
+            print("GameViewModel: Game reset completed")
         }
     }
     
     // MARK: - Puzzle Game Methods
 
     func startPuzzleGame() {
-        guard !isPaused && !showGameOverOverlay else { return }
+        guard !isPaused && !showGameOverOverlay else {
+            print("GameViewModel: Cannot start puzzle - game is paused or game over")
+            return
+        }
+        
+        print("GameViewModel: Starting puzzle game")
         
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            self.pauseGame()
+            // ИСПРАВЛЕНИЕ: Сначала паузим игру, потом показываем пазл
+            self.togglePause(true)
             self.showPuzzleGame = true
-            self.objectWillChange.send()
+            
+            print("GameViewModel: Puzzle game started, isPaused: \(self.isPaused), showPuzzleGame: \(self.showPuzzleGame)")
         }
     }
 
     func completePuzzleGame(success: Bool) {
+        print("GameViewModel: Completing puzzle game with success: \(success)")
+        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
@@ -128,10 +138,13 @@ class GameViewModel: ObservableObject {
             if success {
                 self.amuletsCollected += GameConstants.puzzleReward
                 self.appViewModel?.gameState.recordPuzzleCompleted()
+                print("GameViewModel: Added \(GameConstants.puzzleReward) amulets, total: \(self.amuletsCollected)")
             }
             
-            self.resumeGame()
-            self.objectWillChange.send()
+            // ИСПРАВЛЕНИЕ: Автоматически возобновляем игру после завершения пазла
+            self.togglePause(false)
+            
+            print("GameViewModel: Puzzle completed, resuming game. isPaused: \(self.isPaused)")
         }
     }
     
@@ -174,8 +187,6 @@ class GameViewModel: ObservableObject {
                     perfectRun: self.perfectRun
                 )
             }
-            
-            self.objectWillChange.send()
         }
     }
     
@@ -189,40 +200,48 @@ class GameViewModel: ObservableObject {
 // MARK: - GameSceneDelegate
 extension GameViewModel: GameSceneDelegate {
     func didCollectCoin() {
-        coinsCollected += 1
+        print("GameViewModel: didCollectCoin called")
         
+        // ИСПРАВЛЕНИЕ: Немедленное обновление на главном потоке
         DispatchQueue.main.async { [weak self] in
-            self?.objectWillChange.send()
+            guard let self = self else { return }
+            self.coinsCollected += 1
+            print("GameViewModel: Coins collected updated to: \(self.coinsCollected)")
         }
     }
     
     func didCollectAmulet() {
-        appViewModel?.gameViewModel?.showPuzzleGame = true
-        pauseGame()
+        print("GameViewModel: didCollectAmulet called")
         
+        // ИСПРАВЛЕНИЕ: Немедленный запуск пазла на главном потоке
         DispatchQueue.main.async { [weak self] in
-            self?.objectWillChange.send()
+            guard let self = self else { return }
+            self.startPuzzleGame()
         }
     }
     
     func didHitObstacle() {
-        obstaclesHit += 1
-        perfectRun = false
-        
-        // Вычитаем 1 монету из общей казны согласно ТЗ
-        if let appViewModel = appViewModel {
-            if appViewModel.gameState.coins > 0 {
-                var gameState = appViewModel.gameState
-                gameState.addCoins(-1)
-                appViewModel.gameState = gameState
-                appViewModel.saveGameState()
-            }
-        }
-        
-        appViewModel?.gameState.recordObstacleHit()
+        print("GameViewModel: didHitObstacle called")
         
         DispatchQueue.main.async { [weak self] in
-            self?.objectWillChange.send()
+            guard let self = self else { return }
+            
+            self.obstaclesHit += 1
+            self.perfectRun = false
+            
+            // Вычитаем 1 монету из общей казны согласно ТЗ
+            if let appViewModel = self.appViewModel {
+                if appViewModel.gameState.coins > 0 {
+                    var gameState = appViewModel.gameState
+                    gameState.addCoins(-1)
+                    appViewModel.gameState = gameState
+                    appViewModel.saveGameState()
+                }
+            }
+            
+            self.appViewModel?.gameState.recordObstacleHit()
+            
+            print("GameViewModel: Obstacle hit processed, obstacles hit: \(self.obstaclesHit)")
         }
     }
 }

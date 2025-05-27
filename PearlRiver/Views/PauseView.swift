@@ -21,43 +21,42 @@ struct PauseView: View {
                     }
                 
                 VStack(spacing: 15) {
+                    // ИСПРАВЛЕНИЕ: Убрал обертку Button и передаю action напрямую в ActionButtonView
+                    
                     // Continue button
-                    Button {
+                    ActionButtonView(
+                        title: "Continue",
+                        fontSize: 24,
+                        width: 250,
+                        height: 65
+                    ) {
                         svm.play()
+                        print("PauseView: Continue button tapped")
                         appViewModel.resumeGame()
-                    } label: {
-                        ActionButtonView(
-                            title: "Continue",
-                            fontSize: 24,
-                            width: 250,
-                            height: 65
-                        ) {}
                     }
                     
                     // Restart button
-                    Button {
+                    ActionButtonView(
+                        title: "Restart",
+                        fontSize: 24,
+                        width: 250,
+                        height: 65
+                    ) {
                         svm.play()
+                        print("PauseView: Restart button tapped")
                         appViewModel.restartLevel()
-                    } label: {
-                        ActionButtonView(
-                            title: "Restart",
-                            fontSize: 24,
-                            width: 250,
-                            height: 65
-                        ) {}
                     }
                     
                     // Menu button
-                    Button {
+                    ActionButtonView(
+                        title: "Menu",
+                        fontSize: 24,
+                        width: 250,
+                        height: 65
+                    ) {
                         svm.play()
+                        print("PauseView: Menu button tapped")
                         appViewModel.goToMenu()
-                    } label: {
-                        ActionButtonView(
-                            title: "Menu",
-                            fontSize: 24,
-                            width: 250,
-                            height: 65
-                        ) {}
                     }
                 }
             }
