@@ -44,8 +44,8 @@ struct MyPalaceView: View {
                         buttonImage: .healingSprings,
                         title: "",
                         fontSize: 0,
-                        width: 100,
-                        height: 120
+                        width: 120,
+                        height: 140
                     ) {
                         
                     }
@@ -54,8 +54,8 @@ struct MyPalaceView: View {
                         buttonImage: .templeOfLight,
                         title: "",
                         fontSize: 0,
-                        width: 100,
-                        height: 120
+                        width: 120,
+                        height: 140
                     ) {
                         
                     }
@@ -68,8 +68,8 @@ struct MyPalaceView: View {
                         buttonImage: .grandArena,
                         title: "",
                         fontSize: 0,
-                        width: 130,
-                        height: 120
+                        width: 140,
+                        height: 140
                     ) {
                         
                     }
@@ -79,8 +79,8 @@ struct MyPalaceView: View {
                         buttonImage: .kingsKeep,
                         title: "",
                         fontSize: 0,
-                        width: 100,
-                        height: 120
+                        width: 110,
+                        height: 140
                     ) {
                         
                     }
@@ -94,8 +94,8 @@ struct MyPalaceView: View {
                         buttonImage: .royalBarracks,
                         title: "",
                         fontSize: 0,
-                        width: 100,
-                        height: 120
+                        width: 110,
+                        height: 140
                     ) {
                         
                     }
