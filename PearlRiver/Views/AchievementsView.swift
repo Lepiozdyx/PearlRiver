@@ -13,7 +13,6 @@ struct AchievementView: View {
             AppBGView()
             
             VStack {
-                // Header with back button and currency
                 HStack(alignment: .top) {
                     CircleButtonView(icon: "arrowshape.backward.fill", height: 65) {
                         svm.play()
@@ -54,18 +53,27 @@ struct AchievementView: View {
                 Spacer()
                 
                 // Main content
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 10) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
                         ForEach(viewModel.achievements) { achievement in
-                            // AchiItemView
+                            AchiItemView(
+                                achievement: achievement,
+                                isCompleted: viewModel.isAchievementCompleted(achievement.id),
+                                isNotified: viewModel.isAchievementClaimed(achievement.id),
+                                progress: viewModel.getAchievementProgress(achievement),
+                                onClaim: {
+                                    svm.play()
+                                    viewModel.claimAchievement(achievement.id)
+                                }
+                            )
                         }
                     }
-                    .padding(.vertical)
+                    .padding(.horizontal)
                     .opacity(contentOpacity)
                     .offset(y: contentOffset)
                 }
                 .frame(maxWidth: 450)
-                .padding(.vertical)
+                .padding(.vertical, 40)
                 .padding(.horizontal, 30)
                 .background(
                     Image(.underlay)
@@ -91,6 +99,7 @@ struct AchiItemView: View {
     let achievement: Achievement
     let isCompleted: Bool
     let isNotified: Bool
+    let progress: (current: Int, total: Int)?
     let onClaim: () -> Void
     
     @State private var animate = false
@@ -101,6 +110,7 @@ struct AchiItemView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 100)
+                .colorMultiply(isCompleted ? .white : .black)
                 .scaleEffect(animate && isCompleted && !isNotified ? 1.1 : 1.0)
                 .animation(
                     Animation.easeInOut(duration: 1.5)
@@ -115,26 +125,33 @@ struct AchiItemView: View {
                     VStack {
                         if isCompleted {
                             if isNotified {
-                                Image(systemName: "checkmark.circle.fill")
+                                Image(.amulet)
                                     .resizable()
-                                    .frame(width: 20, height: 25)
-                                    .foregroundColor(.green)
+                                    .scaledToFit()
+                                    .frame(width: 30)
+                                    .shadow(color: .black, radius: 3)
+                                    .background() {
+                                        Circle()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.green)
+                                            .offset(y: -2)
+                                    }
                             } else {
                                 Button(action: onClaim) {
-                                    HStack {
-                                        Text("+\(GameConstants.dailyReward)")
-                                            .fontPRG(14)
-                                        
+                                    HStack(spacing: 2) {
                                         Image("coin")
                                             .resizable()
                                             .scaledToFit()
                                             .frame(height: 20)
+                                        
+                                        Text("claim")
+                                            .fontPRG(14)
                                     }
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
                                     .background(
-                                        Capsule()
-                                            .foregroundStyle(.yellow)
+                                        Image(.buttonRect)
+                                            .resizable()
                                             .shadow(color: .black.opacity(0.5), radius: 3)
                                     )
                                     .scaleEffect(animate ? 1.05 : 1.0)
@@ -145,24 +162,28 @@ struct AchiItemView: View {
                                     )
                                 }
                             }
-                        } else {
-                            Image(systemName: "lock.fill")
-                                .resizable()
-                                .frame(width: 20, height: 25)
-                                .foregroundColor(.white)
-                                .shadow(radius: 2)
                         }
                     }
                 }
             
             // Achievement information
             VStack(spacing: 5) {
-                Text(achievement.title)
-                    .fontPRG(18)
-                
                 Text(achievement.description)
-                    .fontPRG(12)
+                    .fontPRG(10)
+                    .lineLimit(4)
+                    .frame(width: 100)
+                
+                if let progress = progress, !isCompleted {
+                    HStack(spacing: 4) {
+                        Text("Progress:")
+                            .fontPRG(10)
+                        
+                        Text("\(progress.current)/\(progress.total)")
+                            .fontPRG(12)
+                    }
+                }
             }
+            .frame(height: 80)
         }
     }
 }
