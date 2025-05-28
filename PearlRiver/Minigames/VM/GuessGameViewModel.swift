@@ -1,7 +1,7 @@
 import SwiftUI
 import Combine
 
-class GuessNumberViewModel: ObservableObject {
+class GuessGameViewModel: ObservableObject {
     @Published private(set) var gameState: GuessGameState = .playing
     @Published private(set) var targetNumber: Int = 0
     @Published private(set) var attempts: Int = 0

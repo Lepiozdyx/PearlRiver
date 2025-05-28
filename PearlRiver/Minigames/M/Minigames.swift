@@ -141,7 +141,6 @@ struct SequenceImage: Identifiable, Equatable {
 enum MazeGameConstants {
     static let defaultRows = 15
     static let defaultCols = 15
-    static let reward: Int = 30
 }
 
 enum MazeGameState: Equatable {

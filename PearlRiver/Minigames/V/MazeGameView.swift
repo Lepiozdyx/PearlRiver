@@ -55,79 +55,10 @@ struct MazeGameView: View {
                         
                         // Control elements
                         if !isWin {
-                            VStack {
-                                Spacer()
-                                
-                                VStack(spacing: 4) {
-                                    Button {
-                                        sceneController.moveUp()
-                                    } label: {
-                                        Image(.buttonCircle)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(height: 60)
-                                            .overlay {
-                                                Image(systemName: "chevron.up")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(width: 30)
-                                                    .foregroundColor(.black)
-                                            }
-                                    }
-                                    
-                                    HStack(spacing: 40) {
-                                        Button {
-                                            sceneController.moveLeft()
-                                        } label: {
-                                            Image(.buttonCircle)
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 60)
-                                                .overlay {
-                                                    Image(systemName: "chevron.left")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(height: 30)
-                                                        .foregroundColor(.black)
-                                                }
-                                        }
-                                        
-                                        Button {
-                                            sceneController.moveRight()
-                                        } label: {
-                                            Image(.buttonCircle)
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 60)
-                                                .overlay {
-                                                    Image(systemName: "chevron.right")
-                                                        .resizable()
-                                                        .scaledToFit()
-                                                        .frame(height: 30)
-                                                        .foregroundColor(.black)
-                                                }
-                                        }
-                                    }
-                                    
-                                    Button {
-                                        sceneController.moveDown()
-                                    } label: {
-                                        Image(.buttonCircle)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(height: 60)
-                                            .overlay {
-                                                Image(systemName: "chevron.down")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(width: 30)
-                                                    .foregroundColor(.black)
-                                            }
-                                    }
-                                }
-                                .padding(.bottom, 50)
-                            }
-                            .frame(width: geometry.size.width * 0.3)
+                            MazeControlsView(
+                                sceneController: sceneController,
+                                width: geometry.size.width * 0.3
+                            )
                         }
                         
                         Spacer()
@@ -188,9 +119,89 @@ struct MazeGameView: View {
     }
 }
 
-#Preview {
-    MazeGameView()
-        .environmentObject(AppViewModel())
+// MARK: - MazeControlsView
+struct MazeControlsView: View {
+    @ObservedObject var sceneController: MazeSceneController
+    let width: CGFloat
+    
+    var body: some View {
+        VStack {
+            Spacer()
+            
+            VStack(spacing: 4) {
+                // Up button
+                Button {
+                    sceneController.moveUp()
+                } label: {
+                    Image(.buttonCircle)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 60)
+                        .overlay {
+                            Image(systemName: "chevron.up")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 30)
+                                .foregroundColor(.black)
+                        }
+                }
+                
+                // Left and Right buttons
+                HStack(spacing: 40) {
+                    Button {
+                        sceneController.moveLeft()
+                    } label: {
+                        Image(.buttonCircle)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 60)
+                            .overlay {
+                                Image(systemName: "chevron.left")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 30)
+                                    .foregroundColor(.black)
+                            }
+                    }
+                    
+                    Button {
+                        sceneController.moveRight()
+                    } label: {
+                        Image(.buttonCircle)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 60)
+                            .overlay {
+                                Image(systemName: "chevron.right")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 30)
+                                    .foregroundColor(.black)
+                            }
+                    }
+                }
+                
+                // Down button
+                Button {
+                    sceneController.moveDown()
+                } label: {
+                    Image(.buttonCircle)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 60)
+                        .overlay {
+                            Image(systemName: "chevron.down")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 30)
+                                .foregroundColor(.black)
+                        }
+                }
+            }
+            .padding(.bottom, 50)
+        }
+        .frame(width: width)
+    }
 }
 
 // MARK: - MazeViewContainer
@@ -216,12 +227,15 @@ struct MazeViewContainer: UIViewRepresentable {
     
     func updateUIView(_ skView: SKView, context: Context) {
         if skView.scene == nil {
-            let scene = MazeScene(size: size, rows: 16, cols: 16)
+            let scene = MazeScene(
+                size: size,
+                rows: MazeGameConstants.defaultRows,
+                cols: MazeGameConstants.defaultCols
+            )
             scene.scaleMode = .aspectFill
             scene.isWinHandler = {
                 DispatchQueue.main.async {
                     isWin = true
-                    appViewModel?.addCoins(MazeGameConstants.reward)
                 }
             }
             
@@ -232,12 +246,15 @@ struct MazeViewContainer: UIViewRepresentable {
             skView.bounds = CGRect(origin: .zero, size: size)
             
             if let _ = skView.scene as? MazeScene {
-                let newScene = MazeScene(size: size, rows: 8, cols: 8)
+                let newScene = MazeScene(
+                    size: size,
+                    rows: MazeGameConstants.defaultRows,
+                    cols: MazeGameConstants.defaultCols
+                )
                 newScene.scaleMode = .aspectFill
                 newScene.isWinHandler = {
                     DispatchQueue.main.async {
                         isWin = true
-                        appViewModel?.addCoins(MazeGameConstants.reward)
                     }
                 }
                 
@@ -247,4 +264,9 @@ struct MazeViewContainer: UIViewRepresentable {
             }
         }
     }
+}
+
+#Preview {
+    MazeGameView()
+        .environmentObject(AppViewModel())
 }

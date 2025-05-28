@@ -2,7 +2,7 @@ import SwiftUI
 
 struct GuessGameView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
-    @StateObject private var viewModel = GuessNumberViewModel()
+    @StateObject private var viewModel = GuessGameViewModel()
     @StateObject private var svm = SettingsViewModel.shared
     
     @State private var hasAwardedCoins = false

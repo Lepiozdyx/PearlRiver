@@ -121,7 +121,6 @@ class MazeScene: SKScene {
         
         let texture = SKTexture(imageNamed: "player_king")
         player = SKSpriteNode(texture: texture, size: tileSize)
-        player.colorBlendFactor = 0.5
         player.position = pos
         addChild(player)
     }

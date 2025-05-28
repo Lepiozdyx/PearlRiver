@@ -59,13 +59,9 @@ struct MemoryGameView: View {
                                     if let card = viewModel.cards.first(where: {
                                         $0.position.row == row && $0.position.column == column
                                     }) {
-                                        MemoryCardView(
-                                            card: card,
-                                            onTap: {
-                                                viewModel.flipCard(at: position)
-                                            },
-                                            isInteractionDisabled: viewModel.disableCardInteraction
-                                        )
+                                        MemoryCardView(card: card) {
+                                            viewModel.flipCard(at: position)
+                                        }
                                     }
                                 }
                             }
@@ -163,7 +159,6 @@ struct MemoryGameView: View {
 struct MemoryCardView: View {
     let card: MemoryCard
     let onTap: () -> Void
-    let isInteractionDisabled: Bool
     
     @State private var scale: CGFloat = 1.0
     @State private var rotation: Double = 0
@@ -199,7 +194,6 @@ struct MemoryCardView: View {
             )
         }
         .buttonStyle(.plain)
-        .disabled(isInteractionDisabled)
         .onAppear {
             flipped = card.state != .down
             rotation = flipped ? 180 : 0
