@@ -6,6 +6,8 @@ struct PuzzleGameView: View {
     
     let onComplete: (Bool) -> Void
     
+    let grid = Array(repeating: GridItem(.flexible(), spacing: 4), count: 3)
+    
     var body: some View {
         ZStack {
             Color.black.opacity(0.8)
@@ -14,12 +16,13 @@ struct PuzzleGameView: View {
             if viewModel.gameCompleted {
                 VStack(spacing: 30) {
                     Text(viewModel.gameWon ? "PUZZLE COMPLETED!" : "TIME'S UP!")
-                        .fontPRG(32)
+                        .fontPRG(24)
                     
                     HStack(spacing: 2) {
                         Image(.amulet)
                             .resizable()
-                            .frame(width: 40, height: 40)
+                            .scaledToFit()
+                            .frame(height: 40)
                             .rotationEffect(.degrees(amuletsAnimated ? -360 : 0))
                         
                         Text(
@@ -36,63 +39,58 @@ struct PuzzleGameView: View {
                         onComplete(viewModel.gameWon)
                     }
                 }
+                .padding()
             } else {
-                VStack(spacing: 10) {
-                    Image(.buttonRect)
-                        .resizable()
-                        .frame(width: 110, height: 50)
-                        .overlay {
-                            Text("0:\(Int(viewModel.timeRemaining))")
-                                .fontPRG(20)
-                                .colorMultiply(viewModel.timeRemaining <= 6 ? .red : .white)
-                                .offset(y: 2)
-                        }
+                VStack(spacing: 0) {
+                    TimerView(timeRemaining: viewModel.timeRemaining)
                     
                     Spacer()
                     
-                    // Grid
-                    HStack(spacing: 40) {
-                        VStack(spacing: 10) {
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 4) {
+                    HStack(spacing: 0) {
+                        // Left
+                        PuzzleGridContainer {
+                            LazyVGrid(columns: grid, spacing: 4) {
                                 ForEach(viewModel.shuffledPieces, id: \.id) { piece in
-                                    PuzzlePieceImageView(
+                                    PuzzlePieceView(
                                         piece: piece,
-                                        size: 60,
                                         isSelected: viewModel.selectedPiece?.id == piece.id
-                                    )
-                                    .onTapGesture {
+                                    ) {
                                         viewModel.selectPiece(piece)
                                     }
                                 }
                             }
-                            .frame(width: 200)
                         }
                         
-                        VStack(spacing: 10) {
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 4) {
+                        Spacer()
+                        
+                        // Right
+                        PuzzleGridContainer {
+                            LazyVGrid(columns: grid, spacing: 4) {
                                 ForEach(0..<9, id: \.self) { index in
-                                    PuzzleSlotImageView(
+                                    PuzzleSlotView(
                                         targetPosition: index + 1,
-                                        currentPiece: viewModel.targetGrid[index],
-                                        size: 60
-                                    )
-                                    .onTapGesture {
+                                        currentPiece: viewModel.targetGrid[index]
+                                    ) {
                                         if viewModel.selectedPiece != nil {
                                             viewModel.placePieceAt(index: index)
                                         }
                                     }
                                 }
                             }
-                            .frame(width: 200)
                         }
                     }
+                    .aspectRatio(2.2, contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 20)
                     
                     Spacer()
                     
+                    // Инструкция
                     Text("Tap a piece, then tap a slot to place it in the correct order")
                         .fontPRG(14)
                         .opacity(0.8)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding()
             }
         }
@@ -106,70 +104,100 @@ struct PuzzleGameView: View {
     }
 }
 
-struct PuzzlePieceImageView: View {
-    let piece: PuzzlePiece
-    let size: CGFloat
-    let isSelected: Bool
+struct PuzzleGridContainer<Content: View>: View {
+    let content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
     
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.clear)
-                .frame(width: size, height: size)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(isSelected ? .yellow : .white.opacity(0.3), lineWidth: isSelected ? 1.5 : 0.5)
-                )
-                .overlay {
-                    Image(piece.imageName)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: size - 2, height: size - 2)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            // Показываем номер позиции для отладки (можно убрать потом)
-                            Text("\(piece.position)")
-                                .fontPRG(14)
-                                .frame(width: 16, height: 16), alignment: .topTrailing)
-                            #warning("delete numbers")
-                }
+        content
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct TimerView: View {
+    let timeRemaining: Double
+    
+    var body: some View {
+        Image(.buttonRect)
+            .resizable()
+            .scaledToFit()
+            .frame(height: 50)
+            .overlay {
+                Text("0:\(Int(timeRemaining))")
+                    .fontPRG(20)
+                    .colorMultiply(timeRemaining <= 6 ? .red : .white)
+                    .offset(y: 2)
+            }
+    }
+}
+
+struct PuzzlePieceView: View {
+    let piece: PuzzlePiece
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.clear)
+                    .aspectRatio(1, contentMode: .fit)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(isSelected ? .yellow : .white.opacity(0.3), lineWidth: isSelected ? 1.5 : 0.5)
+                    )
+                    .overlay {
+                        Image(piece.imageName)
+                            .resizable()
+                            .scaledToFill()
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+            }
         }
-        .scaleEffect(isSelected ? 1.1 : 1.0)
+        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isSelected ? 1.05 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }
 
-struct PuzzleSlotImageView: View {
+struct PuzzleSlotView: View {
     let targetPosition: Int
     let currentPiece: PuzzlePiece?
-    let size: CGFloat
+    let onTap: () -> Void
     
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .foregroundStyle(
-                    currentPiece != nil
-                    ? .green.opacity(0.5)
-                    : .yellow.opacity(0.2)
-                )
-                .frame(width: size, height: size)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(.white.opacity(0.5), lineWidth: 1)
-                )
-            
-            if let piece = currentPiece {
-                Image(piece.imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: size - 2, height: size - 2)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    
-            } else {
-                Text("\(targetPosition)")
-                    .fontPRG(14)
+        Button(action: onTap) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .foregroundStyle(
+                        currentPiece != nil
+                        ? .green.opacity(0.5)
+                        : .yellow.opacity(0.2)
+                    )
+                    .aspectRatio(1, contentMode: .fit)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(.white.opacity(0.5), lineWidth: 1)
+                    )
+                
+                if let piece = currentPiece {
+                    Image(piece.imageName)
+                        .resizable()
+                        .scaledToFill()
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else {
+                    Text("\(targetPosition)")
+                        .fontPRG(12)
+                }
             }
         }
+        .buttonStyle(.plain)
     }
 }
 
