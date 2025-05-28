@@ -72,7 +72,7 @@ struct MenuView: View {
                             width: 250,
                             height: 90
                         ) {
-                            appViewModel.navigateTo(.levelSelect)
+                            appViewModel.navigateTo(.minigamesMenu)
                         }
                     }
                     

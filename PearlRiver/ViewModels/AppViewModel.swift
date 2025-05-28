@@ -35,6 +35,19 @@ class AppViewModel: ObservableObject {
     }
     
     // MARK: - Navigation Methods
+    func startMiniGame(_ gameType: MiniGameType) {
+        switch gameType {
+        case .guessNumber:
+            navigateTo(.guess)
+        case .memoryCards:
+            navigateTo(.memory)
+        case .sequence:
+            navigateTo(.sequence)
+        case .maze:
+            navigateTo(.maze)
+        }
+    }
+    
     func navigateTo(_ screen: AppScreen) {
         // Cleanup game view model if leaving game screen
         if currentScreen == .game && screen != .game {
@@ -123,8 +136,6 @@ class AppViewModel: ObservableObject {
         let nextLevel = gameLevel + 1
         
         if nextLevel <= GameConstants.maxLevels {
-            print("AppViewModel: Moving to next level: \(nextLevel)")
-            
             // Cleanup current game
             currentGameViewModel.cleanup()
             
@@ -144,13 +155,11 @@ class AppViewModel: ObservableObject {
             }
             
         } else {
-            // All levels completed, return to menu
-            print("AppViewModel: All levels completed, returning to menu")
             goToMenu()
         }
     }
     
-    // MARK: - Level Completion (адаптировано по образцу Oneida)
+    // MARK: - Level Completion
     func completeLevel(coinsCollected: Int, amuletsCollected: Int, perfectRun: Bool) {
         print("AppViewModel: Level \(gameLevel) completed")
         print("  - Coins collected: \(coinsCollected)")
@@ -175,8 +184,6 @@ class AppViewModel: ObservableObject {
         
         saveGameState()
         checkAchievements()
-        
-        print("AppViewModel: Level completion processed. Total coins: \(coins), amulets: \(amulets)")
     }
     
     // MARK: - Currency Methods

@@ -48,6 +48,33 @@ struct ContentView: View {
                 DailyRewardView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
+                
+            // MARK: Mini-games
+                
+            case .minigamesMenu:
+                MiniGamesMenuView()
+                    .environmentObject(appViewModel)
+                    .transition(.move(edge: .trailing))
+                
+            case .memory:
+                MemoryGameView()
+                    .environmentObject(appViewModel)
+                    .transition(.move(edge: .bottom))
+                
+            case .guess:
+                GuessGameView()
+                    .environmentObject(appViewModel)
+                    .transition(.move(edge: .bottom))
+                
+            case .sequence:
+                SequenceGameView()
+                    .environmentObject(appViewModel)
+                    .transition(.move(edge: .bottom))
+                
+            case .maze:
+                MazeGameView()
+                    .environmentObject(appViewModel)
+                    .transition(.move(edge: .bottom))
             }
         }
         .animation(.easeInOut(duration: 0.3), value: appViewModel.currentScreen)

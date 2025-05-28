@@ -9,10 +9,9 @@ enum AppScreen: CaseIterable {
     case shop
     case achievements
     case daily
-    // мини-игры добавим позднее
-//    case miniGames
-//    case memoryCards
-//    case guessNumber
-//    case sequence
-//    case maze
+    case minigamesMenu
+    case memory
+    case guess
+    case sequence
+    case maze
 }
