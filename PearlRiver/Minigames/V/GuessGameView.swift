@@ -57,8 +57,13 @@ struct GuessGameView: View {
                         
                         Slider(value: $sliderValue, in: 0...999, step: 1)
                             .accentColor(.white)
-                            .shadow(color: .black, radius: 2)
+                            .shadow(color: .white, radius: 1)
                             .frame(width: 300)
+                            .padding()
+                            .background(
+                                Capsule()
+                                    .foregroundStyle(.black.opacity(0.5))
+                            )
                         
                         CircleButtonView(icon: "plus", height: 60) {
                             if sliderValue < 999 {
@@ -101,7 +106,6 @@ struct GuessGameView: View {
                         }
                     }
                 }
-                .padding(.bottom, 30)
                 .padding(.horizontal, 50)
                 .background(
                     Image(.underlay)
