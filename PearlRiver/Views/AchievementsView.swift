@@ -138,28 +138,21 @@ struct AchiItemView: View {
                                     }
                             } else {
                                 Button(action: onClaim) {
-                                    HStack(spacing: 2) {
-                                        Image("coin")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(height: 20)
-                                        
-                                        Text("claim")
-                                            .fontPRG(14)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        Image(.buttonRect)
-                                            .resizable()
-                                            .shadow(color: .black.opacity(0.5), radius: 3)
-                                    )
-                                    .scaleEffect(animate ? 1.05 : 1.0)
-                                    .animation(
-                                        Animation.easeInOut(duration: 0.8)
-                                            .repeatForever(autoreverses: true),
-                                        value: animate
-                                    )
+                                    Text("claim")
+                                        .fontPRG(14)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            Image(.buttonRect)
+                                                .resizable()
+                                                .shadow(color: .black.opacity(0.5), radius: 3)
+                                        )
+                                        .scaleEffect(animate ? 1.05 : 1.0)
+                                        .animation(
+                                            Animation.easeInOut(duration: 0.8)
+                                                .repeatForever(autoreverses: true),
+                                            value: animate
+                                        )
                                 }
                             }
                         }
