@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 
 class ShopViewModel: ObservableObject {
+    
     enum ShopTab {
         case skins
         case backgrounds
@@ -22,7 +23,7 @@ class ShopViewModel: ObservableObject {
         availableBackgrounds = BackgroundItem.availableBackgrounds
     }
     
-    // MARK: - Skins Methods (обновлено с instruments)
+    // MARK: - Skins Methods
     func isSkinPurchased(_ id: String) -> Bool {
         guard let gameState = appViewModel?.gameState else { return false }
         return id == "king_default" || gameState.purchasedSkins.contains(id)
@@ -38,7 +39,6 @@ class ShopViewModel: ObservableObject {
               let skin = PlayerSkinItem.availableSkins.first(where: { $0.id == id }),
               appViewModel.gameState.coins >= skin.price else { return }
         
-        // Используем метод GameState для покупки
         if appViewModel.gameState.purchaseSkin(id, price: skin.price) {
             appViewModel.saveGameState()
             selectSkin(id)
@@ -71,7 +71,6 @@ class ShopViewModel: ObservableObject {
               let background = BackgroundItem.availableBackgrounds.first(where: { $0.id == id }),
               appViewModel.gameState.coins >= background.price else { return }
         
-        // Используем метод GameState для покупки
         if appViewModel.gameState.purchaseBackground(id, price: background.price) {
             appViewModel.saveGameState()
             selectBackground(id)

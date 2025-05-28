@@ -1,5 +1,5 @@
-import SwiftUI
 import AVFoundation
+import SwiftUI
 
 @MainActor class SettingsViewModel: ObservableObject {
     
@@ -28,9 +28,11 @@ import AVFoundation
     }
     
     static let shared = SettingsViewModel()
-    private let defaults = UserDefaults.standard
+    
     private var audioPlayer: AVAudioPlayer?
     private var soundPlayer: AVAudioPlayer?
+    
+    private let defaults = UserDefaults.standard
     
     private let soundKey = "appSound"
     private let musicKey = "appMusic"

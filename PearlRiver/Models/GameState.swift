@@ -30,7 +30,7 @@ struct GameState: Codable {
     var totalAmuletsCollected: Int = 0
     var totalObstaclesHit: Int = 0
     var puzzlesCompleted: Int = 0
-    var perfectRuns: Int = 0 // Уровни без попаданий в препятствия
+    var perfectRuns: Int = 0
     
     // MARK: - Ежедневная награда
     var lastDailyRewardDate: Date?
@@ -100,7 +100,6 @@ struct GameState: Codable {
         let daysSinceLastUpdate = Calendar.current.dateComponents([.day], from: lastPalaceUpdate, to: now).day ?? 0
         
         if daysSinceLastUpdate >= 1 {
-            // Начисляем доход за каждый день
             for _ in 0..<daysSinceLastUpdate {
                 for building in palaceBuildings {
                     addCoins(building.goldPerDay)
@@ -119,16 +118,13 @@ struct GameState: Codable {
         let building = palaceBuildings[index]
         guard building.canUpgrade else { return false }
         
-        // Проверяем достаточно ли ресурсов
         guard coins >= building.upgradeCostGold && amulets >= building.upgradeCostAmulets else {
             return false
         }
         
-        // Списываем ресурсы
         coins -= building.upgradeCostGold
         amulets -= building.upgradeCostAmulets
         
-        // Улучшаем здание
         palaceBuildings[index].upgrade()
         
         return true
@@ -200,7 +196,6 @@ struct GameState: Codable {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             var gameState = try decoder.decode(GameState.self, from: data)
-            // Обновляем доход дворца при загрузке
             gameState.updatePalaceIncome()
             return gameState
         } catch {

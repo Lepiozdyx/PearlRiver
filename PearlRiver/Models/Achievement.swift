@@ -11,7 +11,6 @@ struct Achievement: Identifiable, Codable, Equatable {
         return lhs.id == rhs.id
     }
     
-    // Все доступные достижения
     static let allAchievements: [Achievement] = [
         Achievement(
             id: "first_victory",
@@ -55,7 +54,6 @@ struct Achievement: Identifiable, Codable, Equatable {
     }
 }
 
-// Типы требований для достижений
 enum AchievementRequirement: Codable, Equatable {
     case completeLevels(count: Int)
     case collectCoins(amount: Int)
@@ -64,7 +62,6 @@ enum AchievementRequirement: Codable, Equatable {
     case upgradePalaceBuilding(level: Int)
     case completeWithoutHits
     
-    // Проверка выполнения требования
     func isSatisfied(by gameState: GameState) -> Bool {
         switch self {
         case .completeLevels(let count):
@@ -88,7 +85,6 @@ enum AchievementRequirement: Codable, Equatable {
         }
     }
     
-    // Кодирование и декодирование для Codable
     enum CodingKeys: String, CodingKey {
         case type
         case value

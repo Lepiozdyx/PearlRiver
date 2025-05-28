@@ -10,7 +10,6 @@ struct PuzzleDefinition {
         let imageName: String
     }
     
-    // Создать пазл по ID
     static func createPuzzle(id: Int) -> PuzzleDefinition {
         let pieces = (1...9).map { position in
             PuzzlePiece(

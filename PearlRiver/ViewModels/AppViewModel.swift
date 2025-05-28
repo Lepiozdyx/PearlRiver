@@ -49,7 +49,6 @@ class AppViewModel: ObservableObject {
     }
     
     func navigateTo(_ screen: AppScreen) {
-        // Cleanup game view model if leaving game screen
         if currentScreen == .game && screen != .game {
             gameViewModel?.cleanup()
         }
@@ -58,9 +57,6 @@ class AppViewModel: ObservableObject {
     }
     
     func goToMenu() {
-        print("AppViewModel: Returning to menu")
-        
-        // Cleanup game view model
         if let gameViewModel = gameViewModel {
             gameViewModel.cleanup()
         }
@@ -73,30 +69,21 @@ class AppViewModel: ObservableObject {
     func startGame(level: Int? = nil) {
         let levelToStart = level ?? gameState.currentLevel
         
-        // Validate level is unlocked
         guard isLevelUnlocked(levelToStart) else {
-            print("AppViewModel: Level \(levelToStart) is locked")
             return
         }
-        
-        print("AppViewModel: Starting game at level \(levelToStart)")
         
         gameLevel = levelToStart
         gameState.currentLevel = levelToStart
         
-        // Create new game view model (как в Oneida)
         gameViewModel = GameViewModel()
         gameViewModel?.appViewModel = self
         gameViewModel?.currentLevel = levelToStart
         
-        // Navigate to game screen
         navigateTo(.game)
         saveGameState()
-        
-        print("AppViewModel: Game setup completed for level \(levelToStart)")
     }
     
-    // Методы паузы по образцу Oneida
     func pauseGame() {
         DispatchQueue.main.async {
             self.gameViewModel?.togglePause(true)
@@ -129,27 +116,22 @@ class AppViewModel: ObservableObject {
     
     func goToNextLevel() {
         guard let currentGameViewModel = gameViewModel else {
-            print("AppViewModel: Cannot go to next level - no active game")
             return
         }
         
         let nextLevel = gameLevel + 1
         
         if nextLevel <= GameConstants.maxLevels {
-            // Cleanup current game
             currentGameViewModel.cleanup()
             
-            // Update level
             gameLevel = nextLevel
             gameState.currentLevel = nextLevel
             saveGameState()
             
-            // Create new game view model for next level (как в Oneida)
             gameViewModel = GameViewModel()
             gameViewModel?.appViewModel = self
             gameViewModel?.currentLevel = nextLevel
             
-            // Start new level after short delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 self?.objectWillChange.send()
             }
@@ -166,19 +148,15 @@ class AppViewModel: ObservableObject {
         print("  - Amulets collected: \(amuletsCollected)")
         print("  - Perfect run: \(perfectRun)")
         
-        // Add collected resources (coins already multiplied by 5 in GameViewModel)
         gameState.addCoins(coinsCollected)
         gameState.addAmulets(amuletsCollected)
         
-        // Record level completion
         gameState.completeLevel(gameLevel)
         
-        // Record statistics
         if perfectRun {
             gameState.recordPerfectRun()
         }
         
-        // Update local values
         coins = gameState.coins
         amulets = gameState.amulets
         

@@ -48,7 +48,6 @@ class GameViewModel: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Не паузим если показаны оверлеи, КРОМЕ случая когда паузим для пазла
             if paused && !forPuzzle && (self.showGameOverOverlay || self.showPuzzleGame) {
                 return
             }
@@ -109,7 +108,6 @@ class GameViewModel: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Юзаем forPuzzle: true чтобы принудительно паузить
             self.togglePause(true, forPuzzle: true)
             self.showPuzzleGame = true
         }

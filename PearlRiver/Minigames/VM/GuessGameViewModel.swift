@@ -22,13 +22,13 @@ class GuessGameViewModel: ObservableObject {
         attempts += 1
         
         if guess == targetNumber {
-            feedbackMessage = "Correct! You guessed it in \(attempts) attempts."
+            feedbackMessage = "Correct! \(attempts) attempts."
             gameState = .guessed(correct: true, message: feedbackMessage)
         } else if guess < targetNumber {
-            feedbackMessage = "Higher. The number is greater than \(guess)."
+            feedbackMessage = "The number is greater than \(guess)."
             gameState = .guessed(correct: false, message: feedbackMessage)
         } else {
-            feedbackMessage = "Lower. The number is less than \(guess)."
+            feedbackMessage = "The number is less than \(guess)."
             gameState = .guessed(correct: false, message: feedbackMessage)
         }
     }

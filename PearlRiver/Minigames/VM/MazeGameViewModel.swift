@@ -1,11 +1,8 @@
 import SwiftUI
-import Combine
 
 class MazeGameViewModel: ObservableObject {
     @Published private(set) var gameState: MazeGameState = .playing
     @Published private(set) var hasAwardedCoins = false
-    
-    private var cancellables = Set<AnyCancellable>()
     
     weak var appViewModel: AppViewModel?
     

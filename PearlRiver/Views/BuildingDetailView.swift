@@ -19,7 +19,6 @@ struct BuildingDetailView: View {
     
     var body: some View {
         ZStack {
-            // Background overlay
             Color.black.opacity(0.7)
                 .ignoresSafeArea()
                 .onTapGesture {

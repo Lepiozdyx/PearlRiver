@@ -1,6 +1,5 @@
 import SwiftUI
 
-// Типы зданий дворца
 enum PalaceBuildingType: String, Codable, CaseIterable {
     case kingsKeep = "kings_keep"
     case royalBarracks = "royal_barracks"
@@ -44,7 +43,6 @@ enum PalaceBuildingType: String, Codable, CaseIterable {
     }
 }
 
-// Модель здания дворца
 struct PalaceBuilding: Identifiable, Codable, Equatable {
     let id: String
     let name: String
@@ -56,7 +54,6 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
         return lhs.id == rhs.id
     }
     
-    // Вычисляемые свойства для текущего уровня
     var goldPerDay: Int {
         return getGoldPerDay(for: level)
     }
@@ -65,7 +62,6 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
         return getAmuletsPerDay(for: level)
     }
     
-    // ДОБАВЛЕНО: Вычисляемые свойства для следующего уровня
     var nextLevelGoldPerDay: Int {
         guard canUpgrade else { return goldPerDay }
         return getGoldPerDay(for: level + 1)
@@ -76,7 +72,6 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
         return getAmuletsPerDay(for: level + 1)
     }
     
-    // ДОБАВЛЕНО: Приватные методы для расчета дохода по уровню
     private func getGoldPerDay(for buildingLevel: Int) -> Int {
         switch id {
         case "kings_keep":
@@ -287,7 +282,6 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
         }
     }
     
-    // Дефолтные здания дворца согласно ТЗ
     static func defaultBuildings() -> [PalaceBuilding] {
         return [
             PalaceBuilding(

@@ -85,7 +85,6 @@ struct PuzzleGameView: View {
                     
                     Spacer()
                     
-                    // Инструкция
                     Text("Tap a piece, then tap a slot to place it in the correct order")
                         .fontPRG(14)
                         .opacity(0.8)

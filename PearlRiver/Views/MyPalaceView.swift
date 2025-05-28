@@ -42,55 +42,71 @@ struct MyPalaceView: View {
             
             // Palace buildings
             ZStack {
-                PalaceBuildingButton(
-                    building: getBuildingById("healing_springs"),
-                    imageName: .healingSprings,
-                    size: CGSize(width: 100, height: 120),
-                    isAnimated: buildingsAnimated
-                ) {
-                    selectBuilding("healing_springs")
+                VStack {
+                    HStack {
+                        Spacer()
+                        Spacer()
+                        PalaceBuildingButton(
+                            building: getBuildingById("healing_springs"),
+                            imageName: .healingSprings,
+                            size: CGSize(width: 110, height: 135),
+                            isAnimated: buildingsAnimated
+                        ) {
+                            selectBuilding("healing_springs")
+                        }
+                        Spacer()
+                        PalaceBuildingButton(
+                            building: getBuildingById("temple_of_light"),
+                            imageName: .templeOfLight,
+                            size: CGSize(width: 110, height: 150),
+                            isAnimated: buildingsAnimated
+                        ) {
+                            selectBuilding("temple_of_light")
+                        }
+                        .offset(y: 20)
+                        Spacer()
+                    }
+                    Spacer()
                 }
-                .position(x: 320, y: 70)
                 
-                PalaceBuildingButton(
-                    building: getBuildingById("temple_of_light"),
-                    imageName: .templeOfLight,
-                    size: CGSize(width: 105, height: 130),
-                    isAnimated: buildingsAnimated
-                ) {
-                    selectBuilding("temple_of_light")
+                HStack {
+                    Spacer()
+                    PalaceBuildingButton(
+                        building: getBuildingById("grand_arena"),
+                        imageName: .grandArena,
+                        size: CGSize(width: 120, height: 120),
+                        isAnimated: buildingsAnimated
+                    ) {
+                        selectBuilding("grand_arena")
+                    }
+                    Spacer()
+                    PalaceBuildingButton(
+                        building: getBuildingById("kings_keep"),
+                        imageName: .kingsKeep,
+                        size: CGSize(width: 115, height: 160),
+                        isAnimated: buildingsAnimated
+                    ) {
+                        selectBuilding("kings_keep")
+                    }
+                    Spacer()
+                    Spacer()
+                    Spacer()
                 }
-                .position(x: 500, y: 120)
                 
-                PalaceBuildingButton(
-                    building: getBuildingById("grand_arena"),
-                    imageName: .grandArena,
-                    size: CGSize(width: 100, height: 110),
-                    isAnimated: buildingsAnimated
-                ) {
-                    selectBuilding("grand_arena")
+                VStack {
+                    Spacer()
+                    HStack {
+                        PalaceBuildingButton(
+                            building: getBuildingById("royal_barracks"),
+                            imageName: .royalBarracks,
+                            size: CGSize(width: 110, height: 130),
+                            isAnimated: buildingsAnimated
+                        ) {
+                            selectBuilding("royal_barracks")
+                        }
+                        Spacer()
+                    }
                 }
-                .position(x: 210, y: 195)
-                
-                PalaceBuildingButton(
-                    building: getBuildingById("kings_keep"),
-                    imageName: .kingsKeep,
-                    size: CGSize(width: 100, height: 140),
-                    isAnimated: buildingsAnimated
-                ) {
-                    selectBuilding("kings_keep")
-                }
-                .position(x: 390, y: 210)
-                
-                PalaceBuildingButton(
-                    building: getBuildingById("royal_barracks"),
-                    imageName: .royalBarracks,
-                    size: CGSize(width: 90, height: 110),
-                    isAnimated: buildingsAnimated
-                ) {
-                    selectBuilding("royal_barracks")
-                }
-                .position(x: 80, y: 300)
             }
             .padding()
             .onAppear {

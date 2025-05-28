@@ -15,7 +15,7 @@ struct BackgroundItem: Identifiable, Codable, Equatable {
             id: "medieval_castle",
             name: "Medieval Castle",
             imageName: "bg_medieval_castle",
-            price: 0 // дефолтный
+            price: 0
         ),
         BackgroundItem(
             id: "royal_palace",

@@ -1,5 +1,11 @@
 import Foundation
 
+enum AppStates {
+    case fetch
+    case support
+    case app
+}
+
 enum AppScreen: CaseIterable {
     case menu
     case levelSelect

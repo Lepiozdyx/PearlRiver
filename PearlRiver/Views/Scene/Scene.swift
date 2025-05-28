@@ -25,16 +25,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var isGameActive = false
     private var objectsSpawnTimer: Timer?
     
-    // Добавляем свойства для хранения ID скина и фона
     private var skinId: String
     private var backgroundId: String
     private var level: Int
     
-    // Размеры
     private let playerWidth: CGFloat = GameConstants.playerSize.width
     private let playerHeight: CGFloat = GameConstants.playerSize.height
     
-    // MARK: - Инициализация
+    // MARK: - init
     
     init(size: CGSize, level: Int, backgroundId: String, skinId: String) {
         self.level = level
@@ -114,10 +112,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         isPaused = false
         isGameActive = true
         
-        // Отменяем все текущие таймеры
         objectsSpawnTimer?.invalidate()
         
-        // Запускаем новые таймеры
         startSpawningObjects()
     }
     
@@ -125,7 +121,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         isGameActive = false
         objectsSpawnTimer?.invalidate()
         
-        // Останавливаем все движущиеся объекты
         self.isPaused = true
     }
     
@@ -151,7 +146,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let object = SKSpriteNode(imageNamed: objectType.imageName)
         object.size = objectType.size
         
-        // Случайная позиция по X с отступами от краев
         let minX = GameConstants.objectSpawnMinX + object.size.width/2
         let maxX = size.width - GameConstants.objectSpawnMaxX - object.size.width/2
         let randomX = CGFloat.random(in: minX...maxX)
@@ -159,12 +153,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         object.position = CGPoint(x: randomX, y: size.height + object.size.height)
         object.zPosition = 5
         
-        // Физика
         object.physicsBody = SKPhysicsBody(rectangleOf: object.size)
         object.physicsBody?.affectedByGravity = false
         object.physicsBody?.allowsRotation = false
         
-        // Устанавливаем категорию в зависимости от типа объекта
         switch objectType {
         case .coin:
             object.physicsBody?.categoryBitMask = PhysicsCategory.coin
@@ -181,7 +173,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         addChild(object)
         
-        // Анимация падения
         let fallSpeed = GameConstants.objectFallSpeed(for: level)
         let fallDistance = size.height + object.size.height * 2
         let fallDuration = TimeInterval(fallDistance / fallSpeed)
@@ -236,12 +227,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func movePlayer(to location: CGPoint) {
         guard let player = player, isGameActive else { return }
         
-        // Ограничение по краям экрана
         let minX = player.size.width / 2
         let maxX = size.width - player.size.width / 2
         let newX = min(maxX, max(minX, location.x))
         
-        // Плавное перемещение
         let moveAction = SKAction.moveTo(x: newX, duration: 0.1)
         player.run(moveAction)
     }
@@ -254,17 +243,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         if (bodyA.categoryBitMask == PhysicsCategory.player && bodyB.categoryBitMask == PhysicsCategory.coin) ||
             (bodyA.categoryBitMask == PhysicsCategory.coin && bodyB.categoryBitMask == PhysicsCategory.player) {
-            // Столкновение игрока и монеты
+            
             let coinBody = bodyA.categoryBitMask == PhysicsCategory.coin ? bodyA : bodyB
             handleCoinCollection(coinBody.node)
         } else if (bodyA.categoryBitMask == PhysicsCategory.player && bodyB.categoryBitMask == PhysicsCategory.amulet) ||
                     (bodyA.categoryBitMask == PhysicsCategory.amulet && bodyB.categoryBitMask == PhysicsCategory.player) {
-            // Столкновение игрока и амулета
+            
             let amuletBody = bodyA.categoryBitMask == PhysicsCategory.amulet ? bodyA : bodyB
             handleAmuletCollection(amuletBody.node)
         } else if (bodyA.categoryBitMask == PhysicsCategory.player && bodyB.categoryBitMask == PhysicsCategory.obstacle) ||
                     (bodyA.categoryBitMask == PhysicsCategory.obstacle && bodyB.categoryBitMask == PhysicsCategory.player) {
-            // Столкновение игрока и препятствия
+            
             let obstacleBody = bodyA.categoryBitMask == PhysicsCategory.obstacle ? bodyA : bodyB
             handleObstacleHit(obstacleBody.node)
         }
@@ -275,10 +264,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         gameDelegate?.didCollectCoin()
         
-        // Добавляем эффект сбора
         showCollectionEffect(at: node?.position ?? .zero, isSuccess: true)
         
-        // Удаляем монету
         node?.removeFromParent()
     }
     
@@ -287,10 +274,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         gameDelegate?.didCollectAmulet()
         
-        // Добавляем эффект сбора
         showCollectionEffect(at: node?.position ?? .zero, isSuccess: true, isAmulet: true)
         
-        // Удаляем амулет
         node?.removeFromParent()
     }
     
@@ -299,18 +284,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         gameDelegate?.didHitObstacle()
         
-        // Добавляем эффект попадания и мигание игрока
         showCollectionEffect(at: node?.position ?? .zero, isSuccess: false)
         flashPlayer()
         
-        // Удаляем препятствие
         node?.removeFromParent()
     }
     
     private func flashPlayer() {
         guard let player = player else { return }
         
-        // Убираем предыдущую анимацию мигания если есть
         player.removeAction(forKey: "flash")
         
         let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: GameConstants.playerFlashDuration)
@@ -322,12 +304,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func showCollectionEffect(at position: CGPoint, isSuccess: Bool, isAmulet: Bool = false) {
-        // Создаем эмиттер частиц для эффекта
+        
         let emitterName = isAmulet ? "AmuletEffect" : (isSuccess ? "CoinCollectEffect" : "ObstacleHitEffect")
         let emitter = createParticleEffect(named: emitterName, at: position)
         addChild(emitter)
         
-        // Автоматически убираем через небольшое время
         let wait = SKAction.wait(forDuration: 0.7)
         let remove = SKAction.removeFromParent()
         emitter.run(SKAction.sequence([wait, remove]))
@@ -337,7 +318,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let emitter = SKEmitterNode()
         emitter.position = position
         
-        // Создаем простую частицу
         let particleNode = SKShapeNode(circleOfRadius: 3)
         particleNode.fillColor = .white
         particleNode.strokeColor = .clear

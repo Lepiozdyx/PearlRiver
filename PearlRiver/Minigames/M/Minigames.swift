@@ -12,7 +12,7 @@ enum MiniGameType: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .guessNumber: return "Guess the Number"
         case .memoryCards: return "Memory Cards"
-        case .sequence: return "Repeat Sequence"
+        case .sequence: return "Sequence"
         case .maze: return "Maze"
         }
     }
@@ -20,9 +20,10 @@ enum MiniGameType: String, Codable, CaseIterable, Identifiable {
 
 // MARK: - Memory cards
 
-enum MemoryGameConstants {
-    static let gameDuration: TimeInterval = 50
-    static let pairsCount = 6
+enum MemoryCardState {
+    case down
+    case up
+    case matched
 }
 
 enum MemoryCardImage: Int, CaseIterable {
@@ -33,15 +34,14 @@ enum MemoryCardImage: Int, CaseIterable {
     }
 }
 
-enum MemoryCardState {
-    case down
-    case up
-    case matched
-}
-
 enum MemoryGameState: Equatable {
     case playing
     case finished(success: Bool)
+}
+
+enum MemoryGameConstants {
+    static let gameDuration: TimeInterval = 50
+    static let pairsCount = 6
 }
 
 struct MemoryCard: Identifiable, Equatable {

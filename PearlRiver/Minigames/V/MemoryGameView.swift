@@ -33,11 +33,9 @@ struct MemoryGameView: View {
             switch viewModel.gameState {
             case .playing:
                 VStack {
-                    // Top bar with back button and timer
                     HStack(alignment: .top) {
                         Spacer()
                         
-                        // Timer
                         ZStack {
                             Image(.buttonRect)
                                 .resizable()
@@ -50,7 +48,6 @@ struct MemoryGameView: View {
                     
                     Spacer()
                     
-                    // Cards grid
                     VStack(spacing: 4) {
                         LazyVGrid(columns: columns, spacing: 4) {
                             ForEach(0..<3) { row in
@@ -83,7 +80,6 @@ struct MemoryGameView: View {
             viewModel.startGameplay()
             hasAwardedCoins = false
             
-            // Start animations
             withAnimation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.1)) {
                 titleScale = 1.0
                 titleOpacity = 1.0
@@ -101,7 +97,6 @@ struct MemoryGameView: View {
     
     private func gameOverView(success: Bool) -> some View {
         ZStack {
-            // Background
             Color.black.opacity(0.7).ignoresSafeArea()
             
             VStack {
@@ -121,7 +116,7 @@ struct MemoryGameView: View {
                         Text("Success")
                             .fontPRG(30)
                     } else {
-                        Text("Try to be faster next time!")
+                        Text("Try to be faster!")
                             .fontPRG(20)
                     }
                     
@@ -169,12 +164,10 @@ struct MemoryCardView: View {
             onTap()
         } label: {
             ZStack {
-                // Card back
                 Image(.card)
                     .resizable()
                     .scaledToFit()
                 
-                // Card front
                 if let cardImage = MemoryCardImage(rawValue: card.imageIdentifier) {
                     Image(.card)
                         .resizable()

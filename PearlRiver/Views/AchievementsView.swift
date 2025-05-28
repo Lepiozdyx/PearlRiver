@@ -159,7 +159,6 @@ struct AchiItemView: View {
                     }
                 }
             
-            // Achievement information
             VStack(spacing: 5) {
                 Text(achievement.description)
                     .fontPRG(10)

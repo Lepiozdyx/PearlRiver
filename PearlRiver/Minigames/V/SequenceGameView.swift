@@ -9,6 +9,8 @@ struct SequenceGameView: View {
     @State private var contentOpacity: Double = 0
     @State private var contentOffset: CGFloat = 20
     
+    let columns = Array(repeating: GridItem(.flexible()), count: 4)
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -40,7 +42,6 @@ struct SequenceGameView: View {
                 Spacer()
                 
                 HStack(spacing: 20) {
-                    // Display area
                     Image(.buttonCircle)
                         .resizable()
                         .overlay {
@@ -54,9 +55,6 @@ struct SequenceGameView: View {
                             }
                         }
                         .frame(width: 150, height: 150)
-                    
-                    // Button grid
-                    let columns = Array(repeating: GridItem(.flexible()), count: 4)
                     
                     LazyVGrid(columns: columns, spacing: 10) {
                         ForEach(SequenceGameConstants.availableImages, id: \.self) { imageName in
@@ -79,7 +77,6 @@ struct SequenceGameView: View {
                 Spacer()
             }
             
-            // Overlays
             if vm.gameState == .success {
                 ZStack {
                     Color.black.opacity(0.7)

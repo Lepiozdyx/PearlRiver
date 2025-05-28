@@ -70,17 +70,6 @@ enum FallingObjectType: Int, CaseIterable, Identifiable {
         return .vase
     }
     
-    // ДОПОЛНИТЕЛЬНО: Метод для получения вероятности спавна (для отладки)
-    static func getSpawnProbability(for type: FallingObjectType) -> Int {
-        switch type {
-        case .shield: return 25
-        case .vase: return 25
-        case .torch: return 25
-        case .coin: return 20
-        case .amulet: return 5
-        }
-    }
-    
     static var gameObjectTypes: [FallingObjectType] {
         return [.shield, .vase, .torch, .coin, .amulet]
     }

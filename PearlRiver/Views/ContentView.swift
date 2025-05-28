@@ -13,16 +13,25 @@ struct ContentView: View {
                 MenuView()
                     .environmentObject(appViewModel)
                     .transition(.opacity)
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .levelSelect:
                 LvLSelectionView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .game:
                 GameView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .bottom))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .myPalace:
                 MyPalaceView()
@@ -33,21 +42,33 @@ struct ContentView: View {
                 SettingsView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .shop:
                 ShopView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .achievements:
                 AchievementView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .daily:
                 DailyRewardView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             // MARK: Mini-games
                 
@@ -55,26 +76,41 @@ struct ContentView: View {
                 MiniGamesMenuView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .trailing))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .memory:
                 MemoryGameView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .bottom))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .guess:
                 GuessGameView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .bottom))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .sequence:
                 SequenceGameView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .bottom))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
                 
             case .maze:
                 MazeGameView()
                     .environmentObject(appViewModel)
                     .transition(.move(edge: .bottom))
+                    .onAppear {
+                        ScreenManager.shared.lockLandscape()
+                    }
             }
         }
         .animation(.easeInOut(duration: 0.3), value: appViewModel.currentScreen)
