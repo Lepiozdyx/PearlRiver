@@ -58,9 +58,29 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
     
     // Вычисляемые свойства для текущего уровня
     var goldPerDay: Int {
+        return getGoldPerDay(for: level)
+    }
+    
+    var amuletsPerDay: Int {
+        return getAmuletsPerDay(for: level)
+    }
+    
+    // ДОБАВЛЕНО: Вычисляемые свойства для следующего уровня
+    var nextLevelGoldPerDay: Int {
+        guard canUpgrade else { return goldPerDay }
+        return getGoldPerDay(for: level + 1)
+    }
+    
+    var nextLevelAmuletsPerDay: Int {
+        guard canUpgrade else { return amuletsPerDay }
+        return getAmuletsPerDay(for: level + 1)
+    }
+    
+    // ДОБАВЛЕНО: Приватные методы для расчета дохода по уровню
+    private func getGoldPerDay(for buildingLevel: Int) -> Int {
         switch id {
         case "kings_keep":
-            switch level {
+            switch buildingLevel {
             case 1: return 3
             case 2: return 7
             case 3: return 12
@@ -69,7 +89,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "royal_barracks":
-            switch level {
+            switch buildingLevel {
             case 1: return 2
             case 2: return 5
             case 3: return 10
@@ -78,7 +98,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "temple_of_light":
-            switch level {
+            switch buildingLevel {
             case 1: return 3
             case 2: return 8
             case 3: return 13
@@ -87,7 +107,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "grand_arena":
-            switch level {
+            switch buildingLevel {
             case 1: return 2
             case 2: return 6
             case 3: return 11
@@ -96,7 +116,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "healing_springs":
-            switch level {
+            switch buildingLevel {
             case 1: return 2
             case 2: return 5
             case 3: return 9
@@ -108,10 +128,10 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
         }
     }
     
-    var amuletsPerDay: Int {
+    private func getAmuletsPerDay(for buildingLevel: Int) -> Int {
         switch id {
         case "kings_keep":
-            switch level {
+            switch buildingLevel {
             case 1: return 1
             case 2: return 2
             case 3: return 3
@@ -120,7 +140,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "royal_barracks":
-            switch level {
+            switch buildingLevel {
             case 1: return 1
             case 2: return 2
             case 3: return 3
@@ -129,7 +149,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "temple_of_light":
-            switch level {
+            switch buildingLevel {
             case 1: return 1
             case 2: return 2
             case 3: return 3
@@ -138,7 +158,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "grand_arena":
-            switch level {
+            switch buildingLevel {
             case 1: return 1
             case 2: return 2
             case 3: return 3
@@ -147,7 +167,7 @@ struct PalaceBuilding: Identifiable, Codable, Equatable {
             default: return 0
             }
         case "healing_springs":
-            switch level {
+            switch buildingLevel {
             case 1: return 1
             case 2: return 2
             case 3: return 3
